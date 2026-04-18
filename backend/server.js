@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const http = require('http');
 const https = require('https');
 const selfsigned = require('selfsigned');
 const { Server } = require('socket.io');
@@ -12,24 +13,32 @@ const reportRoutes = require('./routes/reports');
 
 const app = express();
 
-// Générer un certificat auto-signé pour HTTPS avec l'IP réelle pour le téléphone
-const IP_ADDRESS = '192.168.88.26';
-const attrs = [{ name: 'commonName', value: IP_ADDRESS }];
-const extensions = [{
-    name: 'subjectAltName',
-    altNames: [
-        { type: 2, value: 'localhost' },
-        { type: 7, ip: IP_ADDRESS },
-        { type: 7, ip: '127.0.0.1' }
-    ]
-}];
+// Configuration du serveur : HTTP pour Render (production), HTTPS local pour le mobile
+const IS_RENDER = process.env.RENDER === 'true' || process.env.NODE_ENV === 'production';
+let server;
 
-const pems = selfsigned.generate(attrs, { days: 365, extensions });
-
-const server = https.createServer({
-    key: pems.private,
-    cert: pems.cert
-}, app);
+if (IS_RENDER) {
+    console.log('🌐 Mode Production/Render : Utilisation de HTTP');
+    server = http.createServer(app);
+} else {
+    console.log('🔐 Mode Local : Utilisation de HTTPS (Self-signed)');
+    // Générer un certificat auto-signé pour HTTPS avec l'IP réelle pour le téléphone
+    const IP_ADDRESS = '192.168.88.26';
+    const attrs = [{ name: 'commonName', value: IP_ADDRESS }];
+    const extensions = [{
+        name: 'subjectAltName',
+        altNames: [
+            { type: 2, value: 'localhost' },
+            { type: 7, ip: IP_ADDRESS },
+            { type: 7, ip: '127.0.0.1' }
+        ]
+    }];
+    const pems = selfsigned.generate(attrs, { days: 365, extensions });
+    server = https.createServer({
+        key: pems.private,
+        cert: pems.cert
+    }, app);
+}
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 

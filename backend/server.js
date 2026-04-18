@@ -146,4 +146,4 @@ function leaveCurrentPair(socket) {
 }
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => console.log(`✅ Wera server running on port ${PORT}`));
+server.listen(PORT, '0.0.0.0', () => console.log(`✅ Wera server running on port ${PORT}`));

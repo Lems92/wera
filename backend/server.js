@@ -31,11 +31,12 @@ const server = https.createServer({
     cert: pems.cert
 }, app);
 
-const io = new Server(server, {
-    cors: { origin: '*', methods: ['GET', 'POST'] }
-});
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-app.use(cors());
+const io = new Server(server, {
+    cors: { origin: FRONTEND_URL, methods: ['GET', 'POST'] }
+});
+app.use(cors({ origin: FRONTEND_URL }));;
 app.use(express.json());
 
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
@@ -49,12 +50,12 @@ app.get('/', (req, res) => res.json({ message: 'Wera API is running 🇲🇬' })
 
 app.get('/api/check-location', async (req, res) => {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    
+
     // Autoriser localhost et les réseaux locaux (192.168.x.x, 10.x.x.x, 172.16.x.x, etc.)
-    const isLocal = ip === '::1' || ip === '127.0.0.1' || 
-                    ip.startsWith('192.168.') || ip.startsWith('10.') || 
-                    ip.startsWith('172.') || ip.startsWith('::ffff:192.168.') ||
-                    ip.startsWith('::ffff:10.') || ip.startsWith('::ffff:172.');
+    const isLocal = ip === '::1' || ip === '127.0.0.1' ||
+        ip.startsWith('192.168.') || ip.startsWith('10.') ||
+        ip.startsWith('172.') || ip.startsWith('::ffff:192.168.') ||
+        ip.startsWith('::ffff:10.') || ip.startsWith('::ffff:172.');
 
     if (isLocal) {
         return res.json({ allowed: true, country: 'Local Network 🇲🇬' });

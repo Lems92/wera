@@ -14,7 +14,8 @@ const reportRoutes = require('./routes/reports');
 const app = express();
 
 // Configuration du serveur : HTTP pour Render (production), HTTPS local pour le mobile
-const IS_RENDER = process.env.RENDER === 'true' || process.env.NODE_ENV === 'production';
+// Render sets RENDER in the runtime environment; don't rely on a specific string value.
+const IS_RENDER = Boolean(process.env.RENDER) || process.env.NODE_ENV === 'production';
 let server;
 
 if (IS_RENDER) {
@@ -155,4 +156,5 @@ function leaveCurrentPair(socket) {
 }
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, '0.0.0.0', () => console.log(`✅ Wera server running on port ${PORT}`));
+// Avoid forcing a host binding; Render will route traffic via PORT.
+server.listen(PORT, () => console.log(`✅ Wera server running on port ${PORT}`));

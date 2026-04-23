@@ -41,12 +41,30 @@ if (IS_RENDER) {
     }, app);
 }
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+function parseAllowedOrigins() {
+    // Supports either FRONTEND_URL (single) or FRONTEND_URLS (comma-separated).
+    const raw = process.env.FRONTEND_URLS || process.env.FRONTEND_URL || 'http://localhost:5173';
+    return raw
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+}
 
-const io = new Server(server, {
-    cors: { origin: FRONTEND_URL, methods: ['GET', 'POST'] }
-});
-app.use(cors({ origin: FRONTEND_URL }));;
+const ALLOWED_ORIGINS = parseAllowedOrigins();
+
+const corsOptions = {
+    origin(origin, cb) {
+        // Allow non-browser requests (no Origin header), e.g. health checks / curl.
+        if (!origin) return cb(null, true);
+        if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+        return cb(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+};
+
+const io = new Server(server, { cors: corsOptions });
+app.use(cors(corsOptions));
 app.use(express.json());
 
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });

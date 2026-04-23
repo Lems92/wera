@@ -284,9 +284,30 @@ export default function Chat() {
             position: 'relative', background: '#000',
             minHeight: isNarrow ? '55dvh' : undefined
         },
+        remoteStage: {
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: isMobile ? '10px' : '16px',
+            overflow: 'hidden'
+        },
+        remoteFrame: {
+            width: '100%',
+            height: '100%',
+            maxWidth: '100%',
+            maxHeight: '100%',
+            aspectRatio: '1 / 1',
+            borderRadius: isMobile ? '14px' : '18px',
+            background: '#1a1a1a',
+            overflow: 'hidden',
+            position: 'relative'
+        },
         remoteVideo: {
-            width: '100%', flex: 1,
-            objectFit: 'cover', background: '#1a1a1a',
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            background: '#1a1a1a',
             display: 'block'
         },
         localVideo: {
@@ -395,8 +416,12 @@ export default function Chat() {
                     </div>
                 )}
 
-                {/* Vidéo distante */}
-                <video ref={remoteVideo} autoPlay playsInline style={s.remoteVideo} />
+                {/* Vidéo distante (forcée en carré) */}
+                <div style={s.remoteStage}>
+                    <div style={s.remoteFrame}>
+                        <video ref={remoteVideo} autoPlay playsInline style={s.remoteVideo} />
+                    </div>
+                </div>
 
                 {/* Vidéo locale (petite) */}
                 <video ref={localVideo} autoPlay playsInline muted style={s.localVideo} />

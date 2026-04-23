@@ -28,6 +28,12 @@ export default function Chat() {
     const currentCall = useRef(null);
     const messagesEnd = useRef(null);
     const peerIdRef = useRef(null);
+    const pendingFindRef = useRef(false);
+    const userRef = useRef(null);
+
+    useEffect(() => {
+        userRef.current = user;
+    }, [user]);
 
     // Redirige si pas connecté
     useEffect(() => {
@@ -57,6 +63,15 @@ export default function Chat() {
             timeout: 20000
         });
 
+        socketRef.current.on('connect', () => {
+            // If user already clicked "Démarrer" while socket was connecting.
+            if (pendingFindRef.current) maybeStartSearch();
+        });
+
+        socketRef.current.on('connect_error', (err) => {
+            console.error('Socket connect_error:', err?.message || err);
+        });
+
         socketRef.current.on('waiting', () => setStatus('waiting'));
 
         socketRef.current.on('partner_found', ({ partnerPeerId, partnerUsername, initiator }) => {
@@ -82,14 +97,33 @@ export default function Chat() {
         });
     };
 
+    const maybeStartSearch = () => {
+        const socket = socketRef.current;
+        const u = userRef.current;
+        if (!pendingFindRef.current) return;
+        if (!u?.username) return;
+        if (!localStream.current) return;
+        if (!peerIdRef.current) return;
+        if (!socket?.connected) return;
+
+        pendingFindRef.current = false;
+        socket.emit('find_partner', {
+            peerId: peerIdRef.current,
+            username: u.username
+        });
+        setStatus('waiting');
+    };
+
     const initPeer = () => {
         // Create a single Peer instance for the whole session.
         // Multiple Peer() instances cause mismatched peerIds and failed calls.
+        const peerServerUrl = new URL(SOCKET_URL);
+
         const peer = new Peer(undefined, {
-            host: import.meta.env.PROD ? new URL(SOCKET_URL).hostname : undefined,
-            port: import.meta.env.PROD ? 443 : undefined,
-            secure: import.meta.env.PROD ? true : undefined,
-            path: import.meta.env.PROD ? '/peerjs' : undefined,
+            host: peerServerUrl.hostname,
+            port: peerServerUrl.port ? Number(peerServerUrl.port) : (peerServerUrl.protocol === 'https:' ? 443 : 80),
+            secure: peerServerUrl.protocol === 'https:',
+            path: '/peerjs',
             // Public STUN servers help with NAT traversal. TURN may still be needed for strict networks.
             config: {
                 iceServers: [
@@ -103,6 +137,7 @@ export default function Chat() {
 
         peer.on('open', (id) => {
             peerIdRef.current = id;
+            maybeStartSearch();
         });
 
         peer.on('call', (call) => {
@@ -118,6 +153,11 @@ export default function Chat() {
         peer.on('error', (err) => {
             console.error('Peer error:', err);
         });
+
+        peer.on('disconnected', () => {
+            // Best-effort reconnect without changing peerIdRef unless a new open fires.
+            try { peer.reconnect(); } catch { /* ignore */ }
+        });
     };
 
     const startCamera = async () => {
@@ -125,6 +165,8 @@ export default function Chat() {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             localStream.current = stream;
             if (localVideo.current) localVideo.current.srcObject = stream;
+            // If "Démarrer" was clicked before camera was ready, start search now.
+            maybeStartSearch();
         } catch (err) {
             alert('Impossible d\'accéder à la caméra/micro. Autorise l\'accès dans ton navigateur.');
         }
@@ -149,12 +191,9 @@ export default function Chat() {
 
     const findPartner = () => {
         if (!localStream.current) return alert('Caméra non disponible');
-        if (!peerIdRef.current) return alert('Connexion réseau en cours, réessaie dans 1-2s');
-
-        socketRef.current.emit('find_partner', {
-            peerId: peerIdRef.current,
-            username: user.username
-        });
+        pendingFindRef.current = true;
+        maybeStartSearch();
+        // If peer/socket aren't ready yet, UI still shows "Recherche..." and auto-starts when ready.
         setStatus('waiting');
     };
 

@@ -77,23 +77,18 @@ app.get('/api', (req, res) => res.json({ status: 'ok', message: 'Wera API is acc
 app.get('/', (req, res) => res.json({ message: 'Wera API is running 🇲🇬' }));
 
 app.get('/api/check-location', async (req, res) => {
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    // No country restriction: always allow.
+    const forwardedFor = req.headers['x-forwarded-for'];
+    const ip = (Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor)
+        ?.split(',')[0]
+        ?.trim() || req.socket.remoteAddress;
 
-    // Autoriser localhost et les réseaux locaux (192.168.x.x, 10.x.x.x, 172.16.x.x, etc.)
-    const isLocal = ip === '::1' || ip === '127.0.0.1' ||
-        ip.startsWith('192.168.') || ip.startsWith('10.') ||
-        ip.startsWith('172.') || ip.startsWith('::ffff:192.168.') ||
-        ip.startsWith('::ffff:10.') || ip.startsWith('::ffff:172.');
-
-    if (isLocal) {
-        return res.json({ allowed: true, country: 'Local Network 🇲🇬' });
-    }
     try {
         const response = await fetch(`http://ip-api.com/json/${ip}`);
         const data = await response.json();
-        res.json({ allowed: data.countryCode === 'MG', country: data.country });
+        res.json({ allowed: true, country: data.country, countryCode: data.countryCode, ip });
     } catch {
-        res.json({ allowed: false });
+        res.json({ allowed: true, ip });
     }
 });
 

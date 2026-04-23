@@ -27,6 +27,7 @@ export default function Chat() {
     const remoteVideo = useRef(null);
     const currentCall = useRef(null);
     const messagesEnd = useRef(null);
+    const peerIdRef = useRef(null);
 
     // Redirige si pas connecté
     useEffect(() => {
@@ -37,6 +38,7 @@ export default function Chat() {
     useEffect(() => {
         initSocket();
         startCamera();
+        initPeer();
         return () => cleanup();
     }, []);
 
@@ -80,6 +82,40 @@ export default function Chat() {
         });
     };
 
+    const initPeer = () => {
+        // Create a single Peer instance for the whole session.
+        // Multiple Peer() instances cause mismatched peerIds and failed calls.
+        const peer = new Peer(undefined, {
+            // Public STUN servers help with NAT traversal. TURN may still be needed for strict networks.
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:global.stun.twilio.com:3478' }
+                ]
+            }
+        });
+
+        peerRef.current = peer;
+
+        peer.on('open', (id) => {
+            peerIdRef.current = id;
+        });
+
+        peer.on('call', (call) => {
+            // Always be ready to answer incoming calls.
+            if (!localStream.current) return;
+            currentCall.current = call;
+            call.answer(localStream.current);
+            call.on('stream', (remoteStream) => {
+                if (remoteVideo.current) remoteVideo.current.srcObject = remoteStream;
+            });
+        });
+
+        peer.on('error', (err) => {
+            console.error('Peer error:', err);
+        });
+    };
+
     const startCamera = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -91,40 +127,29 @@ export default function Chat() {
     };
 
     const connectVideo = (partnerPeerId, initiator) => {
-        const peer = new Peer();
-        peerRef.current = peer;
+        const peer = peerRef.current;
+        if (!peer || !peerIdRef.current) return;
+        if (!localStream.current) return;
 
-        peer.on('open', () => {
-            if (initiator) {
-                const call = peer.call(partnerPeerId, localStream.current);
-                currentCall.current = call;
-                call.on('stream', (remoteStream) => {
-                    if (remoteVideo.current) remoteVideo.current.srcObject = remoteStream;
-                });
-            } else {
-                peer.on('call', (call) => {
-                    currentCall.current = call;
-                    call.answer(localStream.current);
-                    call.on('stream', (remoteStream) => {
-                        if (remoteVideo.current) remoteVideo.current.srcObject = remoteStream;
-                    });
-                });
-            }
-        });
+        if (initiator) {
+            const call = peer.call(partnerPeerId, localStream.current);
+            currentCall.current = call;
+            call.on('stream', (remoteStream) => {
+                if (remoteVideo.current) remoteVideo.current.srcObject = remoteStream;
+            });
+            call.on('error', (err) => console.error('Call error:', err));
+        }
     };
 
     const findPartner = () => {
         if (!localStream.current) return alert('Caméra non disponible');
-        const peer = new Peer();
-        peerRef.current = peer;
+        if (!peerIdRef.current) return alert('Connexion réseau en cours, réessaie dans 1-2s');
 
-        peer.on('open', (peerId) => {
-            socketRef.current.emit('find_partner', {
-                peerId,
-                username: user.username
-            });
-            setStatus('waiting');
+        socketRef.current.emit('find_partner', {
+            peerId: peerIdRef.current,
+            username: user.username
         });
+        setStatus('waiting');
     };
 
     const skip = () => {

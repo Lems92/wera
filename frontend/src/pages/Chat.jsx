@@ -86,6 +86,10 @@ export default function Chat() {
         // Create a single Peer instance for the whole session.
         // Multiple Peer() instances cause mismatched peerIds and failed calls.
         const peer = new Peer(undefined, {
+            host: import.meta.env.PROD ? new URL(SOCKET_URL).hostname : undefined,
+            port: import.meta.env.PROD ? 443 : undefined,
+            secure: import.meta.env.PROD ? true : undefined,
+            path: import.meta.env.PROD ? '/peerjs' : undefined,
             // Public STUN servers help with NAT traversal. TURN may still be needed for strict networks.
             config: {
                 iceServers: [
@@ -132,6 +136,8 @@ export default function Chat() {
         if (!localStream.current) return;
 
         if (initiator) {
+            // Close any previous call before starting a new one (e.g. after "Suivant").
+            currentCall.current?.close();
             const call = peer.call(partnerPeerId, localStream.current);
             currentCall.current = call;
             call.on('stream', (remoteStream) => {
@@ -154,7 +160,6 @@ export default function Chat() {
 
     const skip = () => {
         currentCall.current?.close();
-        peerRef.current?.destroy();
         if (remoteVideo.current) remoteVideo.current.srcObject = null;
         socketRef.current.emit('skip');
         findPartner();
@@ -162,7 +167,6 @@ export default function Chat() {
 
     const stop = () => {
         currentCall.current?.close();
-        peerRef.current?.destroy();
         socketRef.current.emit('skip');
         if (remoteVideo.current) remoteVideo.current.srcObject = null;
         setStatus('idle');

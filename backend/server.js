@@ -5,6 +5,7 @@ const http = require('http');
 const https = require('https');
 const selfsigned = require('selfsigned');
 const { Server } = require('socket.io');
+const { ExpressPeerServer } = require('peer');
 const rateLimit = require('express-rate-limit');
 const fs = require('fs');
 
@@ -96,6 +97,22 @@ const corsOptions = {
 const io = new Server(server, {
     cors: corsOptions,
     transports: ['websocket', 'polling']
+});
+
+// PeerJS signaling server (used by peerjs in the frontend)
+const peerServer = ExpressPeerServer(server, {
+    path: '/',
+    proxied: true,
+    debug: true
+});
+
+app.use('/peerjs', peerServer);
+
+peerServer.on('connection', (client) => {
+    console.log('🧩 Peer connected:', client.getId());
+});
+peerServer.on('disconnect', (client) => {
+    console.log('🧩 Peer disconnected:', client.getId());
 });
 
 // Helpful diagnostics for Render logs when the Engine.IO handshake fails.

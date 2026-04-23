@@ -43,27 +43,60 @@ if (IS_RENDER) {
 
 function parseAllowedOrigins() {
     // Supports either FRONTEND_URL (single) or FRONTEND_URLS (comma-separated).
-    const raw = process.env.FRONTEND_URLS || process.env.FRONTEND_URL || 'http://localhost:5173';
-    return raw
+    // In production, if you don't set FRONTEND_URL(S), we still allow typical Render/Vercel/Netlify frontends.
+    const raw = process.env.FRONTEND_URLS || process.env.FRONTEND_URL || '';
+
+    const defaults = [
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000'
+    ];
+
+    const fromEnv = raw
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean);
+
+    return Array.from(new Set([...defaults, ...fromEnv]));
 }
 
 const ALLOWED_ORIGINS = parseAllowedOrigins();
 
+function isOriginAllowed(origin) {
+    if (!origin) return true; // non-browser requests (no Origin header)
+    if (ALLOWED_ORIGINS.includes('*')) return true;
+    if (ALLOWED_ORIGINS.includes(origin)) return true;
+
+    // Production-friendly allowlist for common hosted frontends when env isn't set.
+    // (Keeps local dev strict while preventing "mystery 400" Socket.IO handshakes on Render.)
+    if (IS_RENDER) {
+        try {
+            const { hostname, protocol } = new URL(origin);
+            if (protocol === 'https:' && (hostname.endsWith('.onrender.com') || hostname.endsWith('.vercel.app') || hostname.endsWith('.netlify.app'))) {
+                return true;
+            }
+        } catch {
+            // ignore invalid origins
+        }
+    }
+
+    return false;
+}
+
 const corsOptions = {
     origin(origin, cb) {
-        // Allow non-browser requests (no Origin header), e.g. health checks / curl.
-        if (!origin) return cb(null, true);
-        if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
-        return cb(new Error(`CORS blocked for origin: ${origin}`));
+        if (isOriginAllowed(origin)) return cb(null, true);
+        return cb(new Error(`CORS blocked for origin: ${origin}. Set FRONTEND_URLS to allow it.`));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 };
 
-const io = new Server(server, { cors: corsOptions });
+const io = new Server(server, {
+    cors: corsOptions,
+    transports: ['websocket', 'polling']
+});
 app.use(cors(corsOptions));
 app.use(express.json());
 

@@ -97,6 +97,19 @@ const io = new Server(server, {
     cors: corsOptions,
     transports: ['websocket', 'polling']
 });
+
+// Helpful diagnostics for Render logs when the Engine.IO handshake fails.
+io.engine.on('connection_error', (err) => {
+    // err: { req, code, message, context }
+    const origin = err?.req?.headers?.origin;
+    const ua = err?.req?.headers?.['user-agent'];
+    console.log('❌ Engine.IO connection_error', {
+        code: err.code,
+        message: err.message,
+        origin,
+        ua
+    });
+});
 app.use(cors(corsOptions));
 app.use(express.json());
 

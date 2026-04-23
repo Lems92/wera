@@ -46,7 +46,14 @@ export default function Chat() {
     }, [messages]);
 
     const initSocket = () => {
-        socketRef.current = io(SOCKET_URL);
+        socketRef.current = io(SOCKET_URL, {
+            transports: ['websocket'],
+            withCredentials: true,
+            reconnection: true,
+            reconnectionAttempts: 10,
+            reconnectionDelay: 500,
+            timeout: 20000
+        });
 
         socketRef.current.on('waiting', () => setStatus('waiting'));
 
@@ -62,7 +69,7 @@ export default function Chat() {
         });
 
         socketRef.current.on('partner_left', () => {
-            setStatus('ended'); 0
+            setStatus('ended');
             setPartnerName('');
             if (remoteVideo.current) remoteVideo.current.srcObject = null;
             currentCall.current?.close();

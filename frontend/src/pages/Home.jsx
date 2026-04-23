@@ -3,11 +3,13 @@ import { useAuth } from '../context/AuthContext';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_URL } from '../config';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 
 export default function Home() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [locationOk, setLocationOk] = useState(null);
+    const isNarrow = useMediaQuery('(max-width: 900px)');
 
     useEffect(() => {
         axios.get(`${import.meta.env.VITE_API_URL}/api/check-location`)
@@ -36,7 +38,11 @@ export default function Home() {
     }
 
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: 'calc(100vh - 57px)' }}>
+        <div style={{
+            display: 'grid',
+            gridTemplateColumns: isNarrow ? '1fr' : '1fr 1fr',
+            minHeight: 'calc(100dvh - 57px)'
+        }}>
 
             {/* Côté gauche - jaune */}
             <div style={{
@@ -62,9 +68,10 @@ export default function Home() {
                 <button
                     onClick={handleStart}
                     style={{
-                        position: 'absolute',
-                        top: '50%', right: '-28px',
-                        transform: 'translateY(-50%)',
+                        position: isNarrow ? 'static' : 'absolute',
+                        top: isNarrow ? undefined : '50%',
+                        right: isNarrow ? undefined : '-28px',
+                        transform: isNarrow ? 'none' : 'translateY(-50%)',
                         width: '56px', height: '56px',
                         borderRadius: '50%',
                         background: '#333',
@@ -75,8 +82,14 @@ export default function Home() {
                         transition: 'transform 0.2s',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
                     }}
-                    onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'}
-                    onMouseLeave={e => e.currentTarget.style.transform = 'translateY(-50%) scale(1)'}
+                    onMouseEnter={e => {
+                        if (!isNarrow) e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
+                        else e.currentTarget.style.transform = 'scale(1.05)';
+                    }}
+                    onMouseLeave={e => {
+                        if (!isNarrow) e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
+                        else e.currentTarget.style.transform = 'scale(1)';
+                    }}
                     title="Commencer"
                 >
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -90,7 +103,7 @@ export default function Home() {
             <div style={{
                 background: '#b5cce0',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                minHeight: '500px',
+                minHeight: isNarrow ? '320px' : '500px',
                 overflow: 'hidden'
             }}>
                 <div style={{ textAlign: 'center', color: '#fff', opacity: 0.7 }}>

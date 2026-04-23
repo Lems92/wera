@@ -1,9 +1,11 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 
 export default function Navbar() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const isMobile = useMediaQuery('(max-width: 600px)');
 
     const handleLogout = () => {
         logout();
@@ -12,12 +14,15 @@ export default function Navbar() {
 
     return (
         <nav style={{
-            display: 'flex', alignItems: 'center', gap: '2rem',
-            padding: '0.9rem 2rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: isMobile ? '1rem' : '2rem',
+            padding: isMobile ? '0.75rem 1rem' : '0.9rem 2rem',
             borderBottom: '1px solid #e5e5e5',
             background: '#fff',
             fontSize: '14px',
-            fontWeight: '500'
+            fontWeight: '500',
+            flexWrap: 'wrap'
         }}>
             <Link to="/" style={{
                 fontSize: '22px', fontWeight: '700', letterSpacing: '-1px',
@@ -40,7 +45,14 @@ export default function Navbar() {
                 <span style={{ color: '#111' }}>Salut, {user.username} 👋</span>
             )}
 
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: '1.5rem' }}>
+            <div style={{
+                marginLeft: 'auto',
+                display: 'flex',
+                gap: isMobile ? '1rem' : '1.5rem',
+                flexWrap: 'wrap',
+                justifyContent: isMobile ? 'flex-start' : 'flex-end',
+                flexBasis: isMobile ? '100%' : 'auto'
+            }}>
                 <Link to="/about" style={{ color: '#111', textDecoration: 'none' }}>A propos</Link>
                 <Link to="/contact" style={{ color: '#111', textDecoration: 'none' }}>Contact</Link>
                 {user && (

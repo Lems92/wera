@@ -5,12 +5,15 @@ import Peer from 'peerjs';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { API_URL, SOCKET_URL } from '../config';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 
 // const SOCKET_URL = 'http://localhost:3001'; // Removed
 
 export default function Chat() {
     const { user, token } = useAuth();
     const navigate = useNavigate();
+    const isNarrow = useMediaQuery('(max-width: 900px)');
+    const isMobile = useMediaQuery('(max-width: 600px)');
 
     const [status, setStatus] = useState('idle');
     // idle | waiting | connected | ended
@@ -269,13 +272,17 @@ export default function Chat() {
     const s = {
         page: {
             display: 'grid',
-            gridTemplateColumns: '1fr 320px',
-            height: 'calc(100vh - 57px)',
-            background: '#111'
+            gridTemplateColumns: isNarrow ? '1fr' : '1fr 320px',
+            gridTemplateRows: isNarrow ? '55dvh auto' : undefined,
+            minHeight: 'calc(100dvh - 57px)',
+            height: isNarrow ? 'auto' : 'calc(100dvh - 57px)',
+            background: '#111',
+            overflow: 'hidden'
         },
         videoSection: {
             display: 'flex', flexDirection: 'column',
-            position: 'relative', background: '#000'
+            position: 'relative', background: '#000',
+            minHeight: isNarrow ? '55dvh' : undefined
         },
         remoteVideo: {
             width: '100%', flex: 1,
@@ -283,16 +290,21 @@ export default function Chat() {
             display: 'block'
         },
         localVideo: {
-            position: 'absolute', bottom: '80px', right: '16px',
-            width: '160px', height: '120px',
+            position: 'absolute',
+            bottom: isMobile ? '72px' : '80px',
+            right: isMobile ? '12px' : '16px',
+            width: isMobile ? '120px' : (isNarrow ? '140px' : '160px'),
+            height: isMobile ? '90px' : (isNarrow ? '105px' : '120px'),
             objectFit: 'cover', borderRadius: '12px',
             border: '2px solid #FFE000', background: '#222',
             zIndex: 10
         },
         controls: {
-            height: '64px',
+            height: isMobile ? 'auto' : '64px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            gap: '12px', background: '#1a1a1a'
+            gap: '12px', background: '#1a1a1a',
+            padding: isMobile ? '10px 12px' : 0,
+            flexWrap: isMobile ? 'wrap' : 'nowrap'
         },
         btn: (color) => ({
             padding: '10px 22px', borderRadius: '24px', border: 'none',
@@ -314,7 +326,10 @@ export default function Chat() {
         },
         chatSection: {
             display: 'flex', flexDirection: 'column',
-            background: '#fff', borderLeft: '1px solid #e5e5e5'
+            background: '#fff',
+            borderLeft: isNarrow ? 'none' : '1px solid #e5e5e5',
+            borderTop: isNarrow ? '1px solid #e5e5e5' : 'none',
+            minHeight: isNarrow ? '45dvh' : undefined
         },
         chatHeader: {
             padding: '1rem', borderBottom: '1px solid #e5e5e5',
@@ -326,7 +341,8 @@ export default function Chat() {
             flexDirection: 'column', gap: '8px'
         },
         bubble: (self) => ({
-            maxWidth: '80%', padding: '8px 12px', borderRadius: '12px',
+            maxWidth: isMobile ? '92%' : '80%',
+            padding: '8px 12px', borderRadius: '12px',
             fontSize: '14px', lineHeight: 1.4,
             alignSelf: self ? 'flex-end' : 'flex-start',
             background: self ? '#FFE000' : '#f0f0f0',
@@ -334,7 +350,10 @@ export default function Chat() {
         }),
         chatInput: {
             display: 'flex', padding: '0.75rem',
-            borderTop: '1px solid #e5e5e5', gap: '8px'
+            borderTop: '1px solid #e5e5e5', gap: '8px',
+            position: isNarrow ? 'sticky' : 'static',
+            bottom: 0,
+            background: '#fff'
         }
     };
 

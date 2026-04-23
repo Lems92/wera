@@ -295,8 +295,8 @@ export default function Chat() {
         },
         remoteFrame: {
             width: '100%',
-            height: '100%',
-            maxWidth: '100%',
+            height: 'auto',
+            maxWidth: isNarrow ? '100%' : 'min(640px, 100%)',
             maxHeight: '100%',
             aspectRatio: '1 / 1',
             borderRadius: isMobile ? '14px' : '18px',

@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { API_URL, SOCKET_URL } from '../config';
 import { useMediaQuery } from '../hooks/useMediaQuery';
+import AdSlot from '../components/AdSlot';
 
 // const SOCKET_URL = 'http://localhost:3001'; // Removed
 
@@ -327,6 +328,11 @@ export default function Chat() {
             padding: isMobile ? '10px 12px' : 0,
             flexWrap: isMobile ? 'wrap' : 'nowrap'
         },
+        adInVideo: {
+            padding: isMobile ? '10px 12px' : '12px 16px',
+            background: '#101010',
+            borderTop: '1px solid #1f1f1f'
+        },
         btn: (color) => ({
             padding: '10px 22px', borderRadius: '24px', border: 'none',
             cursor: 'pointer', fontWeight: '600', fontSize: '14px',
@@ -355,6 +361,10 @@ export default function Chat() {
         chatHeader: {
             padding: '1rem', borderBottom: '1px solid #e5e5e5',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+        },
+        chatAdWrap: {
+            padding: '12px 12px 0',
+            background: '#fff'
         },
         messages: {
             flex: 1, overflowY: 'auto',
@@ -441,6 +451,13 @@ export default function Chat() {
                         </>
                     )}
                 </div>
+
+                {/* Espace pub (desktop/tablette) */}
+                {!isMobile && (
+                    <div style={s.adInVideo}>
+                        <AdSlot placement="video" minHeight={90} />
+                    </div>
+                )}
             </div>
 
             {/* ── Section chat texte ── */}
@@ -466,6 +483,11 @@ export default function Chat() {
                             🚩 Signaler
                         </button>
                     )}
+                </div>
+
+                {/* Espace pub (dans le chat) */}
+                <div style={s.chatAdWrap}>
+                    <AdSlot placement="chat" minHeight={72} />
                 </div>
 
                 <div style={s.messages}>

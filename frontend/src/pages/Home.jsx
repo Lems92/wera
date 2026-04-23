@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_URL } from '../config';
 import { useMediaQuery } from '../hooks/useMediaQuery';
+import AdSlot from '../components/AdSlot';
 
 export default function Home() {
     const { user } = useAuth();
@@ -63,6 +64,10 @@ export default function Home() {
                 }}>
                     NAHITA<br />AKAMA<br />IHANY
                 </h1>
+
+                <div style={{ marginTop: '1.25rem', maxWidth: '520px' }}>
+                    <AdSlot placement="home" minHeight={90} style={{ background: 'rgba(255,255,255,0.6)' }} />
+                </div>
 
                 {/* Bouton téléphone */}
                 <button

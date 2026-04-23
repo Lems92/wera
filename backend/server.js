@@ -159,6 +159,13 @@ app.get('/api/check-location', async (req, res) => {
 const waitingQueue = [];          // file d'attente
 const activePairs = new Map();    // socketId -> socketId
 
+function removeFromWaitingQueue(socket) {
+    // Remove all occurrences (defensive against duplicates).
+    for (let i = waitingQueue.length - 1; i >= 0; i--) {
+        if (waitingQueue[i]?.id === socket.id) waitingQueue.splice(i, 1);
+    }
+}
+
 io.on('connection', (socket) => {
     console.log('✅ Connecté:', socket.id);
 
@@ -167,9 +174,25 @@ io.on('connection', (socket) => {
         socket.data.peerId = peerId;
         socket.data.username = username;
 
+        // If already paired, ignore.
+        if (activePairs.has(socket.id)) return;
+
+        // Ensure the socket isn't already queued (prevents duplicates).
+        removeFromWaitingQueue(socket);
+
         // Si quelqu'un attend déjà → on les apparie
-        if (waitingQueue.length > 0) {
-            const partner = waitingQueue.shift();
+        let partner;
+        while (waitingQueue.length > 0 && !partner) {
+            const candidate = waitingQueue.shift();
+            // Skip invalid / disconnected sockets or self-match.
+            if (!candidate || candidate.disconnected) continue;
+            if (candidate.id === socket.id) continue;
+            // Skip if candidate already paired (stale queue entry).
+            if (activePairs.has(candidate.id)) continue;
+            partner = candidate;
+        }
+
+        if (partner) {
 
             // Enregistre la paire
             activePairs.set(socket.id, partner.id);
@@ -210,14 +233,20 @@ io.on('connection', (socket) => {
     // Passer au suivant
     socket.on('skip', () => {
         leaveCurrentPair(socket);
+        removeFromWaitingQueue(socket);
+        socket.emit('skipped');
+    });
+
+    // Annuler la recherche (quand l'utilisateur stop pendant "Recherche en cours...")
+    socket.on('cancel_search', () => {
+        removeFromWaitingQueue(socket);
         socket.emit('skipped');
     });
 
     // Déconnexion
     socket.on('disconnect', () => {
         leaveCurrentPair(socket);
-        const idx = waitingQueue.indexOf(socket);
-        if (idx !== -1) waitingQueue.splice(idx, 1);
+        removeFromWaitingQueue(socket);
         console.log('❌ Déconnecté:', socket.id);
     });
 });

@@ -167,7 +167,11 @@ export default function Chat() {
 
     const stop = () => {
         currentCall.current?.close();
-        socketRef.current.emit('skip');
+        if (status === 'waiting') {
+            socketRef.current.emit('cancel_search');
+        } else {
+            socketRef.current.emit('skip');
+        }
         if (remoteVideo.current) remoteVideo.current.srcObject = null;
         setStatus('idle');
         setMessages([]);

@@ -23,6 +23,7 @@ export default function Chat() {
     const [partnerName, setPartnerName] = useState('');
     const [isMuted, setIsMuted] = useState(false);
     const [isCamOff, setIsCamOff] = useState(false);
+    const [waitingTooLong, setWaitingTooLong] = useState(false);
 
     const socketRef = useRef(null);
     const peerRef = useRef(null);
@@ -34,10 +35,16 @@ export default function Chat() {
     const peerIdRef = useRef(null);
     const pendingFindRef = useRef(false);
     const userRef = useRef(null);
+    const waitingTimerRef = useRef(null);
+    const statusRef = useRef('idle');
 
     useEffect(() => {
         userRef.current = user;
     }, [user]);
+
+    useEffect(() => {
+        statusRef.current = status;
+    }, [status]);
 
     // Redirige si pas connecté
     useEffect(() => {
@@ -57,6 +64,21 @@ export default function Chat() {
         messagesEnd.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
+    // Timer pour la notification après 2 minutes d'attente
+    useEffect(() => {
+        if (status === 'waiting') {
+            waitingTimerRef.current = setTimeout(() => {
+                setWaitingTooLong(true);
+            }, 120000); // 2 minutes
+        } else {
+            if (waitingTimerRef.current) clearTimeout(waitingTimerRef.current);
+            setWaitingTooLong(false);
+        }
+        return () => {
+            if (waitingTimerRef.current) clearTimeout(waitingTimerRef.current);
+        };
+    }, [status]);
+
     const initSocket = () => {
         socketRef.current = io(SOCKET_URL, {
             // Polling is the most reliable transport on some networks/proxies.
@@ -71,8 +93,10 @@ export default function Chat() {
         });
 
         socketRef.current.on('connect', () => {
-            // If user already clicked "Démarrer" while socket was connecting.
-            if (pendingFindRef.current) maybeStartSearch();
+            // If user was searching or clicked "Démarrer" while socket was connecting.
+            if (statusRef.current === 'waiting' || pendingFindRef.current) {
+                maybeStartSearch(true);
+            }
         });
 
         socketRef.current.on('connect_error', (err) => {
@@ -104,10 +128,10 @@ export default function Chat() {
         });
     };
 
-    const maybeStartSearch = () => {
+    const maybeStartSearch = (force = false) => {
         const socket = socketRef.current;
         const u = userRef.current;
-        if (!pendingFindRef.current) return;
+        if (!force && !pendingFindRef.current) return;
         if (!u?.username) return;
         if (!localStream.current) return;
         if (!peerIdRef.current) return;
@@ -410,7 +434,11 @@ export default function Chat() {
                     <div style={s.overlay}>
                         <div style={{ fontSize: '40px', animation: 'spin 1s linear infinite' }}>⏳</div>
                         <h2 style={{ color: '#fff' }}>Recherche en cours...</h2>
-                        <p style={{ color: '#aaa', fontSize: '14px' }}>En attente d'un autre utilisateur</p>
+                        <p style={{ color: '#aaa', fontSize: '14px', textAlign: 'center', padding: '0 20px' }}>
+                            {waitingTooLong 
+                                ? "Il n'y a personne pour le moment, mais on continue de chercher... 🇲🇬" 
+                                : "En attente d'un autre utilisateur"}
+                        </p>
                         <button style={s.btn('#555')} onClick={stop}>Annuler</button>
                     </div>
                 )}

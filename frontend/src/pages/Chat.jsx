@@ -24,6 +24,9 @@ export default function Chat() {
     const [isMuted, setIsMuted] = useState(false);
     const [isCamOff, setIsCamOff] = useState(false);
     const [waitingTooLong, setWaitingTooLong] = useState(false);
+    const [onlineCount, setOnlineCount] = useState(77188); // Mock value
+    const [country, setCountry] = useState('Madagascar');
+    const [gender, setGender] = useState('Both');
 
     const socketRef = useRef(null);
     const peerRef = useRef(null);
@@ -296,276 +299,337 @@ export default function Chat() {
     // ── Styles ──────────────────────────────────────────────
     const s = {
         page: {
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100dvh',
+            background: '#000',
+            color: '#fff',
+            overflow: 'hidden',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+        },
+        desktopLayout: {
             display: 'grid',
-            gridTemplateColumns: isNarrow ? '1fr' : '1fr 320px',
-            gridTemplateRows: isNarrow ? '55dvh auto' : undefined,
-            minHeight: 'calc(100dvh - 57px)',
-            height: isNarrow ? 'auto' : 'calc(100dvh - 57px)',
+            gridTemplateColumns: '1fr 1fr',
+            gridTemplateRows: '1fr auto',
+            height: '100%',
             background: '#111',
-            overflow: 'hidden'
+            padding: '20px',
+            gap: '20px'
         },
-        videoSection: {
-            display: 'flex', flexDirection: 'column',
-            position: 'relative', background: '#000',
-            minHeight: isNarrow ? '55dvh' : undefined
+        mobileHeader: {
+            padding: '10px 15px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            background: '#000',
+            borderBottom: '1px solid #333'
         },
-        remoteStage: {
-            flex: 1,
+        statsRow: {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: isMobile ? '10px' : '16px',
+            gap: '8px',
+            fontSize: '14px',
+            fontWeight: '500'
+        },
+        onlineDot: {
+            width: '10px',
+            height: '10px',
+            borderRadius: '50%',
+            background: '#00ff00'
+        },
+        filtersRow: {
+            display: 'flex',
+            gap: '10px'
+        },
+        filterBtn: {
+            flex: 1,
+            padding: '10px',
+            background: 'transparent',
+            border: '1px solid #555',
+            borderRadius: '8px',
+            color: '#fff',
+            fontSize: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            fontWeight: 'bold',
+            textTransform: 'uppercase'
+        },
+        mainContent: {
+            flex: 1,
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
             overflow: 'hidden'
         },
-        remoteFrame: {
-            width: '100%',
-            height: 'auto',
-            maxWidth: isNarrow ? '100%' : 'min(640px, 100%)',
-            maxHeight: '100%',
-            aspectRatio: '1 / 1',
-            borderRadius: isMobile ? '14px' : '18px',
-            background: '#1a1a1a',
-            overflow: 'hidden',
-            position: 'relative'
+        videoContainer: {
+            flex: 1,
+            position: 'relative',
+            background: '#000',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
         },
         remoteVideo: {
             width: '100%',
             height: '100%',
-            objectFit: 'cover',
-            background: '#1a1a1a',
-            display: 'block'
+            objectFit: 'cover'
         },
-        localVideo: {
+        localVideoOverlay: {
             position: 'absolute',
-            bottom: isMobile ? '72px' : '80px',
-            right: isMobile ? '12px' : '16px',
-            width: isMobile ? '120px' : (isNarrow ? '140px' : '160px'),
-            height: isMobile ? '90px' : (isNarrow ? '105px' : '120px'),
-            objectFit: 'cover', borderRadius: '12px',
-            border: '2px solid #FFE000', background: '#222',
+            bottom: '20px',
+            right: '20px',
+            width: '120px',
+            height: '160px',
+            borderRadius: '12px',
+            border: '2px solid #555',
+            background: '#222',
+            objectFit: 'cover',
             zIndex: 10
         },
-        controls: {
-            height: isMobile ? 'auto' : '64px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            gap: '12px', background: '#1a1a1a',
-            padding: isMobile ? '10px 12px' : 0,
-            flexWrap: isMobile ? 'wrap' : 'nowrap'
+        bottomNav: {
+            height: '70px',
+            background: '#111',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-around',
+            borderTop: '1px solid #222',
+            paddingBottom: 'env(safe-area-inset-bottom)'
         },
-        adInVideo: {
-            padding: isMobile ? '10px 12px' : '12px 16px',
-            background: '#101010',
-            borderTop: '1px solid #1f1f1f'
+        navItem: (active) => ({
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            color: active ? '#00ff00' : '#888',
+            fontSize: '24px',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer'
+        }),
+        pcVideoFrame: {
+            position: 'relative',
+            background: '#1a1a1a',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            aspectRatio: '4/3',
+            border: '2px solid #333'
         },
-        btn: (color) => ({
-            padding: '10px 22px', borderRadius: '24px', border: 'none',
-            cursor: 'pointer', fontWeight: '600', fontSize: '14px',
-            background: color, color: color === '#FFE000' ? '#111' : '#fff',
-            transition: 'opacity 0.2s'
+        pcControls: {
+            gridColumn: '1 / span 2',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '20px',
+            padding: '10px'
+        },
+        pcBtn: (color) => ({
+            padding: '12px 30px',
+            borderRadius: '8px',
+            border: 'none',
+            fontWeight: 'bold',
+            fontSize: '16px',
+            cursor: 'pointer',
+            background: color,
+            color: '#fff'
         }),
-        iconBtn: (active) => ({
-            width: '44px', height: '44px', borderRadius: '50%', border: 'none',
-            cursor: 'pointer', fontSize: '18px',
-            background: active ? '#333' : '#e00',
-            transition: 'background 0.2s'
-        }),
+        chatOverlay: {
+            position: 'absolute',
+            bottom: '20px',
+            left: '20px',
+            right: '20px',
+            maxHeight: '30%',
+            overflowY: 'auto',
+            background: 'rgba(0,0,0,0.5)',
+            borderRadius: '10px',
+            padding: '10px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '5px',
+            pointerEvents: 'none'
+        },
+        chatInputMobile: {
+            position: 'absolute',
+            bottom: '80px',
+            left: '15px',
+            right: '15px',
+            display: 'flex',
+            gap: '10px',
+            zIndex: 20
+        },
+        input: {
+            flex: 1,
+            padding: '12px 15px',
+            borderRadius: '25px',
+            border: '1px solid #444',
+            background: 'rgba(0,0,0,0.7)',
+            color: '#fff',
+            outline: 'none'
+        },
         overlay: {
-            position: 'absolute', inset: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexDirection: 'column', gap: '1rem',
-            background: '#111', zIndex: 5
-        },
-        chatSection: {
-            display: 'flex', flexDirection: 'column',
-            background: '#fff',
-            borderLeft: isNarrow ? 'none' : '1px solid #e5e5e5',
-            borderTop: isNarrow ? '1px solid #e5e5e5' : 'none',
-            minHeight: isNarrow ? '45dvh' : undefined
-        },
-        chatHeader: {
-            padding: '1rem', borderBottom: '1px solid #e5e5e5',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-        },
-        chatAdWrap: {
-            padding: '12px 12px 0',
-            background: '#fff'
-        },
-        messages: {
-            flex: 1, overflowY: 'auto',
-            padding: '1rem', display: 'flex',
-            flexDirection: 'column', gap: '8px'
-        },
-        bubble: (self) => ({
-            maxWidth: isMobile ? '92%' : '80%',
-            padding: '8px 12px', borderRadius: '12px',
-            fontSize: '14px', lineHeight: 1.4,
-            alignSelf: self ? 'flex-end' : 'flex-start',
-            background: self ? '#FFE000' : '#f0f0f0',
-            color: '#111'
-        }),
-        chatInput: {
-            display: 'flex', padding: '0.75rem',
-            borderTop: '1px solid #e5e5e5', gap: '8px',
-            position: isNarrow ? 'sticky' : 'static',
-            bottom: 0,
-            background: '#fff'
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(0,0,0,0.8)',
+            zIndex: 100,
+            textAlign: 'center',
+            padding: '20px'
         }
     };
 
+    if (!isMobile) {
+        // ── PC Layout (Ome.tv style) ──
+        return (
+            <div style={s.page}>
+                <div style={s.desktopLayout}>
+                    {/* Vidéo Partenaire */}
+                    <div style={s.pcVideoFrame}>
+                        <video ref={remoteVideo} autoPlay playsInline style={s.remoteVideo} />
+                        {status === 'waiting' && (
+                            <div style={s.overlay}>
+                                <div style={{ fontSize: '40px', animation: 'spin 1s linear infinite' }}>⏳</div>
+                                <h2>Recherche...</h2>
+                                <p>{waitingTooLong ? "Un peu de patience... 🇲🇬" : "En attente d'un partenaire"}</p>
+                            </div>
+                        )}
+                        {status === 'idle' && (
+                            <div style={s.overlay}>
+                                <h2>Prêt ?</h2>
+                                <button style={s.pcBtn('#00c853')} onClick={findPartner}>DÉMARRER</button>
+                            </div>
+                        )}
+                        {/* Chat Overlay on Partner Video */}
+                        <div style={s.chatOverlay}>
+                            {messages.slice(-5).map((msg, i) => (
+                                <div key={i} style={{ color: msg.self ? '#FFE000' : '#fff', fontSize: '14px', pointerEvents: 'none' }}>
+                                    <b>{msg.self ? 'Moi' : msg.from}:</b> {msg.text}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Vidéo Locale */}
+                    <div style={s.pcVideoFrame}>
+                        <video ref={localVideo} autoPlay playsInline muted style={s.remoteVideo} />
+                    </div>
+
+                    {/* Contrôles Desktop */}
+                    <div style={s.pcControls}>
+                        <button style={s.pcBtn('#ff5252')} onClick={stop}>STOP</button>
+                        <button style={s.pcBtn('#2979ff')} onClick={skip}>SUIVANT</button>
+                        <form onSubmit={sendMessage} style={{ flex: 1, display: 'flex', gap: '10px' }}>
+                            <input 
+                                style={s.input} 
+                                value={inputMsg} 
+                                onChange={e => setInputMsg(e.target.value)} 
+                                placeholder="Écrire un message..."
+                                disabled={status !== 'connected'}
+                            />
+                            <button style={s.pcBtn('#FFE000')} type="submit" disabled={status !== 'connected'}>ENVOYER</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Mobile Layout (OmeTV style) ──
     return (
         <div style={s.page}>
-
-            {/* ── Section vidéo ── */}
-            <div style={s.videoSection}>
-
-                {/* Overlay état */}
-                {status === 'idle' && (
-                    <div style={s.overlay}>
-                        <div style={{ fontSize: '48px' }}>🇲🇬</div>
-                        <h2 style={{ color: '#fff', fontSize: '22px' }}>Prêt à rencontrer des Malagasy ?</h2>
-                        <p style={{ color: '#aaa', fontSize: '14px' }}>Clique sur Démarrer pour trouver un partenaire</p>
-                        <button style={s.btn('#FFE000')} onClick={findPartner}>
-                            Démarrer
-                        </button>
-                    </div>
-                )}
-
-                {status === 'waiting' && (
-                    <div style={s.overlay}>
-                        <div style={{ fontSize: '40px', animation: 'spin 1s linear infinite' }}>⏳</div>
-                        <h2 style={{ color: '#fff' }}>Recherche en cours...</h2>
-                        <p style={{ color: '#aaa', fontSize: '14px', textAlign: 'center', padding: '0 20px' }}>
-                            {waitingTooLong 
-                                ? "Il n'y a personne pour le moment, mais on continue de chercher... 🇲🇬" 
-                                : "En attente d'un autre utilisateur"}
-                        </p>
-                        <button style={s.btn('#555')} onClick={stop}>Annuler</button>
-                    </div>
-                )}
-
-                {status === 'ended' && (
-                    <div style={s.overlay}>
-                        <div style={{ fontSize: '40px' }}>👋</div>
-                        <h2 style={{ color: '#fff' }}>La conversation est terminée</h2>
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                            <button style={s.btn('#FFE000')} onClick={findPartner}>Nouveau</button>
-                            <button style={s.btn('#333')} onClick={stop}>Arrêter</button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Vidéo distante (forcée en carré) */}
-                <div style={s.remoteStage}>
-                    <div style={s.remoteFrame}>
-                        <video ref={remoteVideo} autoPlay playsInline style={s.remoteVideo} />
-                    </div>
+            {/* Header Mobile */}
+            <div style={s.mobileHeader}>
+                <div style={s.statsRow}>
+                    <div style={s.onlineDot} />
+                    <span>{onlineCount.toLocaleString()} Users online</span>
+                    <span style={{ marginLeft: 'auto', fontSize: '20px' }}>⚙️</span>
                 </div>
-
-                {/* Vidéo locale (petite) */}
-                <video ref={localVideo} autoPlay playsInline muted style={s.localVideo} />
-
-                {/* Contrôles */}
-                <div style={s.controls}>
-                    <button style={s.iconBtn(!isMuted)} onClick={toggleMute} title="Micro">
-                        {isMuted ? '🔇' : '🎤'}
+                <div style={s.filtersRow}>
+                    <button style={s.filterBtn}>
+                        <span>COUNTRY:</span>
+                        <span style={{ fontSize: '18px' }}>🇲🇬</span>
                     </button>
-                    <button style={s.iconBtn(!isCamOff)} onClick={toggleCam} title="Caméra">
-                        {isCamOff ? '📵' : '📷'}
+                    <button style={s.filterBtn}>
+                        <span>I AM:</span>
+                        <span style={{ fontSize: '18px' }}>👤</span>
                     </button>
+                </div>
+            </div>
+
+            {/* Content Area */}
+            <div style={s.mainContent}>
+                <div style={s.videoContainer}>
+                    <video ref={remoteVideo} autoPlay playsInline style={s.remoteVideo} />
+                    
+                    {/* Local Video Overlay */}
+                    <video ref={localVideo} autoPlay playsInline muted style={s.localVideoOverlay} />
+
+                    {/* State Overlays */}
+                    {status === 'idle' && (
+                        <div style={s.overlay}>
+                            <h2 style={{ fontSize: '24px', marginBottom: '20px' }}>Prêt à discuter ?</h2>
+                            <button 
+                                style={{ ...s.pcBtn('#00c853'), borderRadius: '30px', padding: '15px 50px' }} 
+                                onClick={findPartner}
+                            >
+                                DÉMARRER
+                            </button>
+                        </div>
+                    )}
+
+                    {status === 'waiting' && (
+                        <div style={s.overlay}>
+                            <div style={{ fontSize: '50px', animation: 'spin 1s linear infinite' }}>⏳</div>
+                            <h2>Recherche en cours...</h2>
+                            <p style={{ opacity: 0.7 }}>
+                                {waitingTooLong ? "Presque là... 🇲🇬" : "On te cherche un partenaire"}
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Rules/Overlay Text */}
+                    <div style={{ 
+                        position: 'absolute', bottom: '10px', left: '10px', right: '10px',
+                        fontSize: '10px', color: 'rgba(255,255,255,0.6)', textAlign: 'center'
+                    }}>
+                        By using this videochat you agree with our rules. Rules violators will be banned.
+                    </div>
+
+                    {/* Quick controls on video for mobile */}
                     {status === 'connected' && (
-                        <>
-                            <button style={s.btn('#FFE000')} onClick={skip}>⏭ Suivant</button>
-                            <button style={s.btn('#e00')} onClick={stop}>✖ Stop</button>
-                        </>
+                        <div style={{ position: 'absolute', bottom: '100px', right: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <button style={s.pcBtn('#2979ff')} onClick={skip}>⏭</button>
+                            <button style={s.pcBtn('#ff5252')} onClick={stop}>✖</button>
+                        </div>
                     )}
                 </div>
 
-                {/* Espace pub (desktop/tablette) */}
-                {!isMobile && (
-                    <div style={s.adInVideo}>
-                        <AdSlot placement="video" minHeight={90} />
-                    </div>
+                {/* Chat Input (Floating on mobile) */}
+                {status === 'connected' && (
+                    <form onSubmit={sendMessage} style={s.chatInputMobile}>
+                        <input 
+                            style={s.input} 
+                            value={inputMsg} 
+                            onChange={e => setInputMsg(e.target.value)} 
+                            placeholder="Message..."
+                        />
+                        <button style={{ ...s.navItem(true), fontSize: '24px' }} type="submit">➤</button>
+                    </form>
                 )}
             </div>
 
-            {/* ── Section chat texte ── */}
-            <div style={s.chatSection}>
-                <div style={s.chatHeader}>
-                    <div>
-                        <p style={{ fontWeight: '600', fontSize: '15px' }}>
-                            {status === 'connected' ? `💬 ${partnerName}` : 'Chat'}
-                        </p>
-                        <p style={{ fontSize: '12px', color: '#888' }}>
-                            {status === 'connected' ? 'En ligne' : 'Pas connecté'}
-                        </p>
-                    </div>
-                    {status === 'connected' && (
-                        <button
-                            onClick={reportUser}
-                            style={{
-                                background: 'none', border: '1px solid #e00',
-                                color: '#e00', borderRadius: '8px',
-                                padding: '4px 10px', fontSize: '12px', cursor: 'pointer'
-                            }}
-                        >
-                            🚩 Signaler
-                        </button>
-                    )}
-                </div>
-
-                {/* Espace pub (dans le chat) */}
-                <div style={s.chatAdWrap}>
-                    <AdSlot placement="chat" minHeight={72} />
-                </div>
-
-                <div style={s.messages}>
-                    {messages.length === 0 && (
-                        <p style={{ color: '#ccc', fontSize: '13px', textAlign: 'center', marginTop: '2rem' }}>
-                            {status === 'connected'
-                                ? 'Dis bonjour ! 👋'
-                                : 'Les messages apparaîtront ici'}
-                        </p>
-                    )}
-                    {messages.map((msg, i) => (
-                        <div key={i} style={{ alignSelf: msg.self ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
-                            {!msg.self && (
-                                <p style={{ fontSize: '11px', color: '#888', marginBottom: '2px' }}>{msg.from}</p>
-                            )}
-                            <div style={s.bubble(msg.self)}>{msg.text}</div>
-                            <p style={{
-                                fontSize: '11px', color: '#bbb', marginTop: '2px',
-                                textAlign: msg.self ? 'right' : 'left'
-                            }}>{msg.time}</p>
-                        </div>
-                    ))}
-                    <div ref={messagesEnd} />
-                </div>
-
-                <form onSubmit={sendMessage} style={s.chatInput}>
-                    <input
-                        value={inputMsg}
-                        onChange={e => setInputMsg(e.target.value)}
-                        placeholder={status === 'connected' ? 'Écrire un message...' : 'En attente...'}
-                        disabled={status !== 'connected'}
-                        style={{
-                            flex: 1, padding: '8px 12px', borderRadius: '20px',
-                            border: '1px solid #ddd', fontSize: '14px', outline: 'none'
-                        }}
-                    />
-                    <button
-                        type="submit"
-                        disabled={status !== 'connected'}
-                        style={{
-                            background: '#FFE000', border: 'none', borderRadius: '20px',
-                            padding: '8px 16px', cursor: 'pointer',
-                            fontWeight: '600', fontSize: '14px', color: '#111'
-                        }}
-                    >
-                        ➤
-                    </button>
-                </form>
+            {/* Bottom Nav */}
+            <div style={s.bottomNav}>
+                <button style={s.navItem(false)}>👤</button>
+                <button style={s.navItem(false)}>🔍</button>
+                <button style={s.navItem(true)}>📺</button>
+                <button style={s.navItem(false)}>✉️</button>
+                <button style={s.navItem(false)}>🖼️</button>
             </div>
-
         </div>
     );
 }

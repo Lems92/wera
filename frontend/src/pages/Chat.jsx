@@ -117,10 +117,10 @@ export default function Chat() {
         });
 
         socketRef.current.on('partner_left', () => {
-            setStatus('ended');
             setPartnerName('');
             if (remoteVideo.current) remoteVideo.current.srcObject = null;
             currentCall.current?.close();
+            findPartner();
         });
 
         socketRef.current.on('skipped', () => {

@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../config';
+import { Container, Card, Form, Button, Alert } from 'react-bootstrap';
 
 export default function Register() {
     const [form, setForm] = useState({ username: '', email: '', password: '' });
@@ -22,81 +23,71 @@ export default function Register() {
     };
 
     return (
-        <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            minHeight: 'calc(100vh - 57px)', background: 'var(--gray)'
-        }}>
-            <div style={{
-                background: '#fff', padding: '2.5rem', borderRadius: '16px',
-                width: '100%', maxWidth: '400px',
-                border: '1px solid #e5e5e5'
-            }}>
-                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    <span style={{
-                        fontSize: '22px', fontWeight: '700', letterSpacing: '-1px',
-                        border: '2.5px solid #111', borderRadius: '8px',
-                        padding: '2px 10px'
-                    }}>wera</span>
-                    <h2 style={{ marginTop: '1rem', fontSize: '20px' }}>Créer un compte</h2>
-                </div>
-
-                {error && (
-                    <div style={{
-                        background: '#fee', color: '#c00', padding: '0.75rem',
-                        borderRadius: '8px', marginBottom: '1rem', fontSize: '14px'
-                    }}>
-                        {error}
+        <Container className="d-flex align-items-center justify-content-center py-5" style={{ minHeight: 'calc(100vh - 72px)' }}>
+            <Card className="shadow-sm border-0" style={{ maxWidth: '400px', width: '100%', borderRadius: '16px' }}>
+                <Card.Body className="p-4 p-md-5">
+                    <div className="text-center mb-4">
+                        <span className="fw-bold px-3 py-1 border border-3 border-dark rounded-3" style={{ fontSize: '24px', letterSpacing: '-1px' }}>
+                            wera
+                        </span>
+                        <h2 className="mt-4 h4 fw-bold">Créer un compte</h2>
                     </div>
-                )}
 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <input
-                        type="text" placeholder="Nom d'utilisateur"
-                        value={form.username}
-                        onChange={e => setForm({ ...form, username: e.target.value })}
-                        required
-                        style={{
-                            padding: '0.75rem 1rem', borderRadius: '8px',
-                            border: '1px solid #ddd', fontSize: '15px', outline: 'none'
-                        }}
-                    />
-                    <input
-                        type="email" placeholder="Email"
-                        value={form.email}
-                        onChange={e => setForm({ ...form, email: e.target.value })}
-                        required
-                        style={{
-                            padding: '0.75rem 1rem', borderRadius: '8px',
-                            border: '1px solid #ddd', fontSize: '15px', outline: 'none'
-                        }}
-                    />
-                    <input
-                        type="password" placeholder="Mot de passe"
-                        value={form.password}
-                        onChange={e => setForm({ ...form, password: e.target.value })}
-                        required
-                        style={{
-                            padding: '0.75rem 1rem', borderRadius: '8px',
-                            border: '1px solid #ddd', fontSize: '15px', outline: 'none'
-                        }}
-                    />
-                    <button type="submit" style={{
-                        background: 'var(--yellow)', color: '#111',
-                        border: 'none', padding: '0.85rem',
-                        borderRadius: '8px', fontSize: '15px',
-                        fontWeight: '600', cursor: 'pointer'
-                    }}>
-                        S'inscrire
-                    </button>
-                </form>
+                    {error && (
+                        <Alert variant="danger" className="py-2 small">
+                            {error}
+                        </Alert>
+                    )}
 
-                <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '14px', color: '#666' }}>
-                    Déjà un compte ?{' '}
-                    <Link to="/login" style={{ color: '#111', fontWeight: '600' }}>
-                        Se connecter
-                    </Link>
-                </p>
-            </div>
-        </div>
+                    <Form onSubmit={handleSubmit}>
+                        <Form.Group className="mb-3">
+                            <Form.Control
+                                type="text"
+                                placeholder="Nom d'utilisateur"
+                                value={form.username}
+                                onChange={e => setForm({ ...form, username: e.target.value })}
+                                required
+                                className="py-2 px-3"
+                            />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                            <Form.Control
+                                type="email"
+                                placeholder="Email"
+                                value={form.email}
+                                onChange={e => setForm({ ...form, email: e.target.value })}
+                                required
+                                className="py-2 px-3"
+                            />
+                        </Form.Group>
+
+                        <Form.Group className="mb-4">
+                            <Form.Control
+                                type="password"
+                                placeholder="Mot de passe"
+                                value={form.password}
+                                onChange={e => setForm({ ...form, password: e.target.value })}
+                                required
+                                className="py-2 px-3"
+                            />
+                        </Form.Group>
+
+                        <Button variant="warning" type="submit" className="w-100 fw-bold py-2 shadow-sm border-0 text-dark">
+                            S'inscrire
+                        </Button>
+                    </Form>
+
+                    <div className="text-center mt-4">
+                        <p className="text-muted small mb-0">
+                            Déjà un compte ?{' '}
+                            <Link to="/login" className="text-dark fw-bold text-decoration-none border-bottom border-dark border-2">
+                                Se connecter
+                            </Link>
+                        </p>
+                    </div>
+                </Card.Body>
+            </Card>
+        </Container>
     );
-}
+}

@@ -1,32 +1,24 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import Peer from 'peerjs';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { API_URL, SOCKET_URL } from '../config';
-import { useMediaQuery } from '../hooks/useMediaQuery';
-import AdSlot from '../components/AdSlot';
-
-// const SOCKET_URL = 'http://localhost:3001'; // Removed
+import { Container, Row, Col, Button, Form, Spinner, Badge } from 'react-bootstrap';
 
 export default function Chat() {
     const { user, token } = useAuth();
     const navigate = useNavigate();
-    const isNarrow = useMediaQuery('(max-width: 900px)');
-    const isMobile = useMediaQuery('(max-width: 600px)');
 
     const [status, setStatus] = useState('idle');
-    // idle | waiting | connected | ended
     const [messages, setMessages] = useState([]);
     const [inputMsg, setInputMsg] = useState('');
     const [partnerName, setPartnerName] = useState('');
     const [isMuted, setIsMuted] = useState(false);
     const [isCamOff, setIsCamOff] = useState(false);
     const [waitingTooLong, setWaitingTooLong] = useState(false);
-    const [onlineCount, setOnlineCount] = useState(77188); // Mock value
-    const [country, setCountry] = useState('Madagascar');
-    const [gender, setGender] = useState('Both');
+    const [onlineCount] = useState(77188); // Mock value
 
     const socketRef = useRef(null);
     const peerRef = useRef(null);
@@ -49,12 +41,10 @@ export default function Chat() {
         statusRef.current = status;
     }, [status]);
 
-    // Redirige si pas connecté
     useEffect(() => {
         if (!user) navigate('/login');
-    }, [user]);
+    }, [user, navigate]);
 
-    // Initialise socket + caméra au montage
     useEffect(() => {
         initSocket();
         startCamera();
@@ -62,17 +52,15 @@ export default function Chat() {
         return () => cleanup();
     }, []);
 
-    // Auto-scroll messages
     useEffect(() => {
         messagesEnd.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    // Timer pour la notification après 2 minutes d'attente
     useEffect(() => {
         if (status === 'waiting') {
             waitingTimerRef.current = setTimeout(() => {
                 setWaitingTooLong(true);
-            }, 120000); // 2 minutes
+            }, 120000);
         } else {
             if (waitingTimerRef.current) clearTimeout(waitingTimerRef.current);
             setWaitingTooLong(false);
@@ -84,8 +72,6 @@ export default function Chat() {
 
     const initSocket = () => {
         socketRef.current = io(SOCKET_URL, {
-            // Polling is the most reliable transport on some networks/proxies.
-            // We disable upgrade to avoid flaky websocket handshakes/timeouts.
             transports: ['polling'],
             upgrade: false,
             withCredentials: true,
@@ -96,14 +82,9 @@ export default function Chat() {
         });
 
         socketRef.current.on('connect', () => {
-            // If user was searching or clicked "Démarrer" while socket was connecting.
             if (statusRef.current === 'waiting' || pendingFindRef.current) {
                 maybeStartSearch(true);
             }
-        });
-
-        socketRef.current.on('connect_error', (err) => {
-            console.error('Socket connect_error:', err?.message || err);
         });
 
         socketRef.current.on('waiting', () => setStatus('waiting'));
@@ -149,16 +130,12 @@ export default function Chat() {
     };
 
     const initPeer = () => {
-        // Create a single Peer instance for the whole session.
-        // Multiple Peer() instances cause mismatched peerIds and failed calls.
         const peerServerUrl = new URL(SOCKET_URL);
-
         const peer = new Peer(undefined, {
             host: peerServerUrl.hostname,
             port: peerServerUrl.port ? Number(peerServerUrl.port) : (peerServerUrl.protocol === 'https:' ? 443 : 80),
             secure: peerServerUrl.protocol === 'https:',
             path: '/peerjs',
-            // Public STUN servers help with NAT traversal. TURN may still be needed for strict networks.
             config: {
                 iceServers: [
                     { urls: 'stun:stun.l.google.com:19302' },
@@ -175,7 +152,6 @@ export default function Chat() {
         });
 
         peer.on('call', (call) => {
-            // Always be ready to answer incoming calls.
             if (!localStream.current) return;
             currentCall.current = call;
             call.answer(localStream.current);
@@ -184,12 +160,7 @@ export default function Chat() {
             });
         });
 
-        peer.on('error', (err) => {
-            console.error('Peer error:', err);
-        });
-
         peer.on('disconnected', () => {
-            // Best-effort reconnect without changing peerIdRef unless a new open fires.
             try { peer.reconnect(); } catch { /* ignore */ }
         });
     };
@@ -199,27 +170,23 @@ export default function Chat() {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             localStream.current = stream;
             if (localVideo.current) localVideo.current.srcObject = stream;
-            // If "Démarrer" was clicked before camera was ready, start search now.
             maybeStartSearch();
         } catch (err) {
-            alert('Impossible d\'accéder à la caméra/micro. Autorise l\'accès dans ton navigateur.');
+            alert('Impossible d\'accéder à la caméra/micro.');
         }
     };
 
     const connectVideo = (partnerPeerId, initiator) => {
         const peer = peerRef.current;
-        if (!peer || !peerIdRef.current) return;
-        if (!localStream.current) return;
+        if (!peer || !peerIdRef.current || !localStream.current) return;
 
         if (initiator) {
-            // Close any previous call before starting a new one (e.g. after "Suivant").
             currentCall.current?.close();
             const call = peer.call(partnerPeerId, localStream.current);
             currentCall.current = call;
             call.on('stream', (remoteStream) => {
                 if (remoteVideo.current) remoteVideo.current.srcObject = remoteStream;
             });
-            call.on('error', (err) => console.error('Call error:', err));
         }
     };
 
@@ -227,7 +194,6 @@ export default function Chat() {
         if (!localStream.current) return alert('Caméra non disponible');
         pendingFindRef.current = true;
         maybeStartSearch();
-        // If peer/socket aren't ready yet, UI still shows "Recherche..." and auto-starts when ready.
         setStatus('waiting');
     };
 
@@ -264,371 +230,109 @@ export default function Chat() {
         setInputMsg('');
     };
 
-    const toggleMute = () => {
-        if (localStream.current) {
-            localStream.current.getAudioTracks().forEach(t => t.enabled = isMuted);
-            setIsMuted(!isMuted);
-        }
-    };
-
-    const toggleCam = () => {
-        if (localStream.current) {
-            localStream.current.getVideoTracks().forEach(t => t.enabled = isCamOff);
-            setIsCamOff(!isCamOff);
-        }
-    };
-
-    const reportUser = async () => {
-        if (!window.confirm('Signaler cet utilisateur ?')) return;
-        try {
-            await axios.post(`${API_URL}/reports`,
-                { reported_id: partnerName, reason: 'Comportement inapproprié' },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            alert('Signalement envoyé. Merci !');
-            skip();
-        } catch { alert('Erreur lors du signalement'); }
-    };
-
     const cleanup = () => {
         localStream.current?.getTracks().forEach(t => t.stop());
         socketRef.current?.disconnect();
         peerRef.current?.destroy();
     };
 
-    // ── Styles ──────────────────────────────────────────────
-    const s = {
-        page: {
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100dvh',
-            background: '#000',
-            color: '#fff',
-            overflow: 'hidden',
-            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
-        },
-        desktopLayout: {
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gridTemplateRows: '1fr auto',
-            height: '100%',
-            background: '#111',
-            padding: '20px',
-            gap: '20px'
-        },
-        mobileHeader: {
-            padding: '10px 15px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px',
-            background: '#000',
-            borderBottom: '1px solid #333'
-        },
-        statsRow: {
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            fontSize: '14px',
-            fontWeight: '500'
-        },
-        onlineDot: {
-            width: '10px',
-            height: '10px',
-            borderRadius: '50%',
-            background: '#00ff00'
-        },
-        filtersRow: {
-            display: 'flex',
-            gap: '10px'
-        },
-        filterBtn: {
-            flex: 1,
-            padding: '10px',
-            background: 'transparent',
-            border: '1px solid #555',
-            borderRadius: '8px',
-            color: '#fff',
-            fontSize: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            fontWeight: 'bold',
-            textTransform: 'uppercase'
-        },
-        mainContent: {
-            flex: 1,
-            position: 'relative',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden'
-        },
-        videoContainer: {
-            flex: 1,
-            position: 'relative',
-            background: '#000',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-        },
-        remoteVideo: {
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover'
-        },
-        localVideoOverlay: {
-            position: 'absolute',
-            bottom: '20px',
-            right: '20px',
-            width: '120px',
-            height: '160px',
-            borderRadius: '12px',
-            border: '2px solid #555',
-            background: '#222',
-            objectFit: 'cover',
-            zIndex: 10
-        },
-        bottomNav: {
-            height: '70px',
-            background: '#111',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-around',
-            borderTop: '1px solid #222',
-            paddingBottom: 'env(safe-area-inset-bottom)'
-        },
-        navItem: (active) => ({
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-            color: active ? '#00ff00' : '#888',
-            fontSize: '24px',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer'
-        }),
-        pcVideoFrame: {
-            position: 'relative',
-            background: '#1a1a1a',
-            borderRadius: '12px',
-            overflow: 'hidden',
-            aspectRatio: '4/3',
-            border: '2px solid #333'
-        },
-        pcControls: {
-            gridColumn: '1 / span 2',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '20px',
-            padding: '10px'
-        },
-        pcBtn: (color) => ({
-            padding: '12px 30px',
-            borderRadius: '8px',
-            border: 'none',
-            fontWeight: 'bold',
-            fontSize: '16px',
-            cursor: 'pointer',
-            background: color,
-            color: '#fff'
-        }),
-        chatOverlay: {
-            position: 'absolute',
-            bottom: '20px',
-            left: '20px',
-            right: '20px',
-            maxHeight: '30%',
-            overflowY: 'auto',
-            background: 'rgba(0,0,0,0.5)',
-            borderRadius: '10px',
-            padding: '10px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '5px',
-            pointerEvents: 'none'
-        },
-        chatInputMobile: {
-            position: 'absolute',
-            bottom: '80px',
-            left: '15px',
-            right: '15px',
-            display: 'flex',
-            gap: '10px',
-            zIndex: 20
-        },
-        input: {
-            flex: 1,
-            padding: '12px 15px',
-            borderRadius: '25px',
-            border: '1px solid #444',
-            background: 'rgba(0,0,0,0.7)',
-            color: '#fff',
-            outline: 'none'
-        },
-        overlay: {
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'rgba(0,0,0,0.8)',
-            zIndex: 100,
-            textAlign: 'center',
-            padding: '20px'
-        }
-    };
+    return (
+        <div className="bg-dark text-white overflow-hidden d-flex flex-column" style={{ height: 'calc(100vh - 72px)' }}>
+            {/* Header / Stats */}
+            <div className="bg-black py-2 px-3 d-flex align-items-center justify-content-between border-bottom border-secondary">
+                <div className="d-flex align-items-center gap-2">
+                    <Badge bg="success" pill className="p-1" style={{ width: '10px', height: '10px' }}> </Badge>
+                    <small className="fw-bold">{onlineCount.toLocaleString()} en ligne</small>
+                </div>
+                <div className="d-flex gap-2">
+                    <Button variant="outline-light" size="sm" className="py-0 px-2 fw-bold small border-secondary text-uppercase">🇲🇬 Pays</Button>
+                    <Button variant="outline-light" size="sm" className="py-0 px-2 fw-bold small border-secondary text-uppercase">👤 Genre</Button>
+                </div>
+            </div>
 
-    if (!isMobile) {
-        // ── PC Layout (Ome.tv style) ──
-        return (
-            <div style={s.page}>
-                <div style={s.desktopLayout}>
-                    {/* Vidéo Partenaire */}
-                    <div style={s.pcVideoFrame}>
-                        <video ref={remoteVideo} autoPlay playsInline style={s.remoteVideo} />
+            {/* Main Area */}
+            <Container fluid className="flex-grow-1 p-0 position-relative d-flex flex-column">
+                <Row className="g-0 flex-grow-1">
+                    {/* Partner Video */}
+                    <Col md={6} className="bg-black position-relative border-end border-secondary d-flex align-items-center justify-content-center overflow-hidden">
+                        <video ref={remoteVideo} autoPlay playsInline className="w-100 h-100 object-fit-cover" />
+                        
+                        {/* Status Overlays */}
                         {status === 'waiting' && (
-                            <div style={s.overlay}>
-                                <div style={{ fontSize: '40px', animation: 'spin 1s linear infinite' }}>⏳</div>
-                                <h2>Recherche...</h2>
-                                <p>{waitingTooLong ? "Un peu de patience... 🇲🇬" : "En attente d'un partenaire"}</p>
+                            <div className="position-absolute inset-0 d-flex flex-column align-items-center justify-content-center bg-black bg-opacity-75 text-center p-3">
+                                <Spinner animation="border" variant="warning" className="mb-3" />
+                                <h3 className="fw-bold">Recherche...</h3>
+                                <p className="text-muted small">
+                                    {waitingTooLong ? "Un peu de patience... 🇲🇬" : "Recherche d'un partenaire en cours"}
+                                </p>
                             </div>
                         )}
                         {status === 'idle' && (
-                            <div style={s.overlay}>
-                                <h2>Prêt ?</h2>
-                                <button style={s.pcBtn('#00c853')} onClick={findPartner}>DÉMARRER</button>
+                            <div className="position-absolute inset-0 d-flex flex-column align-items-center justify-content-center bg-black bg-opacity-75">
+                                <Button variant="success" size="lg" pill className="px-5 py-3 fw-bold shadow-lg" onClick={findPartner}>
+                                    DÉMARRER
+                                </Button>
                             </div>
                         )}
-                        {/* Chat Overlay on Partner Video */}
-                        <div style={s.chatOverlay}>
+
+                        {/* Chat Overlay on Partner Video (PC view mostly) */}
+                        <div className="position-absolute bottom-0 start-0 w-100 p-3 pointer-events-none d-none d-md-flex flex-column gap-1" style={{ maxHeight: '40%', overflowY: 'auto', background: 'linear-gradient(transparent, rgba(0,0,0,0.7))' }}>
                             {messages.slice(-5).map((msg, i) => (
-                                <div key={i} style={{ color: msg.self ? '#FFE000' : '#fff', fontSize: '14px', pointerEvents: 'none' }}>
-                                    <b>{msg.self ? 'Moi' : msg.from}:</b> {msg.text}
+                                <div key={i} className="small">
+                                    <span className={msg.self ? 'text-warning fw-bold' : 'text-white fw-bold'}>{msg.self ? 'Moi' : msg.from}: </span>
+                                    <span>{msg.text}</span>
                                 </div>
                             ))}
                         </div>
-                    </div>
+                    </Col>
 
-                    {/* Vidéo Locale */}
-                    <div style={s.pcVideoFrame}>
-                        <video ref={localVideo} autoPlay playsInline muted style={s.remoteVideo} />
-                    </div>
-
-                    {/* Contrôles Desktop */}
-                    <div style={s.pcControls}>
-                        <button style={s.pcBtn('#ff5252')} onClick={stop}>STOP</button>
-                        <button style={s.pcBtn('#2979ff')} onClick={skip}>SUIVANT</button>
-                        <form onSubmit={sendMessage} style={{ flex: 1, display: 'flex', gap: '10px' }}>
-                            <input 
-                                style={s.input} 
-                                value={inputMsg} 
-                                onChange={e => setInputMsg(e.target.value)} 
-                                placeholder="Écrire un message..."
-                                disabled={status !== 'connected'}
-                            />
-                            <button style={s.pcBtn('#FFE000')} type="submit" disabled={status !== 'connected'}>ENVOYER</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    // ── Mobile Layout (OmeTV style) ──
-    return (
-        <div style={s.page}>
-            {/* Header Mobile */}
-            <div style={s.mobileHeader}>
-                <div style={s.statsRow}>
-                    <div style={s.onlineDot} />
-                    <span>{onlineCount.toLocaleString()} Users online</span>
-                    <span style={{ marginLeft: 'auto', fontSize: '20px' }}>⚙️</span>
-                </div>
-                <div style={s.filtersRow}>
-                    <button style={s.filterBtn}>
-                        <span>COUNTRY:</span>
-                        <span style={{ fontSize: '18px' }}>🇲🇬</span>
-                    </button>
-                    <button style={s.filterBtn}>
-                        <span>I AM:</span>
-                        <span style={{ fontSize: '18px' }}>👤</span>
-                    </button>
-                </div>
-            </div>
-
-            {/* Content Area */}
-            <div style={s.mainContent}>
-                <div style={s.videoContainer}>
-                    <video ref={remoteVideo} autoPlay playsInline style={s.remoteVideo} />
-                    
-                    {/* Local Video Overlay */}
-                    <video ref={localVideo} autoPlay playsInline muted style={s.localVideoOverlay} />
-
-                    {/* State Overlays */}
-                    {status === 'idle' && (
-                        <div style={s.overlay}>
-                            <h2 style={{ fontSize: '24px', marginBottom: '20px' }}>Prêt à discuter ?</h2>
-                            <button 
-                                style={{ ...s.pcBtn('#00c853'), borderRadius: '30px', padding: '15px 50px' }} 
-                                onClick={findPartner}
-                            >
-                                DÉMARRER
-                            </button>
+                    {/* Local Video */}
+                    <Col md={6} className="bg-black position-relative d-flex align-items-center justify-content-center overflow-hidden">
+                        <video ref={localVideo} autoPlay playsInline muted className="w-100 h-100 object-fit-cover d-none d-md-block" />
+                        {/* Mobile view overlay for local camera */}
+                        <video ref={localVideo} autoPlay playsInline muted className="position-absolute top-2 end-2 border border-secondary rounded shadow-lg d-md-none" style={{ width: '100px', height: '130px', objectFit: 'cover', zIndex: 10 }} />
+                        
+                        {/* Rules/Info */}
+                        <div className="position-absolute bottom-0 start-0 w-100 p-2 text-center text-secondary small d-none d-md-block" style={{ fontSize: '10px' }}>
+                            En utilisant ce chat, vous acceptez nos règles. Les contrevenants seront bannis.
                         </div>
-                    )}
+                    </Col>
+                </Row>
 
-                    {status === 'waiting' && (
-                        <div style={s.overlay}>
-                            <div style={{ fontSize: '50px', animation: 'spin 1s linear infinite' }}>⏳</div>
-                            <h2>Recherche en cours...</h2>
-                            <p style={{ opacity: 0.7 }}>
-                                {waitingTooLong ? "Presque là... 🇲🇬" : "On te cherche un partenaire"}
-                            </p>
-                        </div>
-                    )}
-
-                    {/* Rules/Overlay Text */}
-                    <div style={{ 
-                        position: 'absolute', bottom: '10px', left: '10px', right: '10px',
-                        fontSize: '10px', color: 'rgba(255,255,255,0.6)', textAlign: 'center'
-                    }}>
-                        By using this videochat you agree with our rules. Rules violators will be banned.
-                    </div>
-
-                    {/* Quick controls on video for mobile */}
-                    {status === 'connected' && (
-                        <div style={{ position: 'absolute', bottom: '100px', right: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            <button style={s.pcBtn('#2979ff')} onClick={skip}>⏭</button>
-                            <button style={s.pcBtn('#ff5252')} onClick={stop}>✖</button>
-                        </div>
-                    )}
+                {/* Controls & Chat Input */}
+                <div className="bg-black border-top border-secondary p-2 p-md-3 mt-auto">
+                    <Row className="align-items-center g-2">
+                        <Col xs="auto">
+                            <Button variant="danger" onClick={stop} className="fw-bold px-3">STOP</Button>
+                        </Col>
+                        <Col xs="auto">
+                            <Button variant="primary" onClick={skip} className="fw-bold px-3">SUIVANT</Button>
+                        </Col>
+                        <Col className="position-relative">
+                            <Form onSubmit={sendMessage} className="d-flex gap-2">
+                                <Form.Control
+                                    value={inputMsg}
+                                    onChange={e => setInputMsg(e.target.value)}
+                                    placeholder="Écrire un message..."
+                                    disabled={status !== 'connected'}
+                                    className="bg-dark text-white border-secondary rounded-pill px-4 py-2"
+                                />
+                                <Button variant="warning" type="submit" disabled={status !== 'connected'} className="rounded-circle d-flex align-items-center justify-content-center" style={{ width: '42px', height: '42px' }}>
+                                    ➤
+                                </Button>
+                            </Form>
+                        </Col>
+                    </Row>
                 </div>
+            </Container>
 
-                {/* Chat Input (Floating on mobile) */}
-                {status === 'connected' && (
-                    <form onSubmit={sendMessage} style={s.chatInputMobile}>
-                        <input 
-                            style={s.input} 
-                            value={inputMsg} 
-                            onChange={e => setInputMsg(e.target.value)} 
-                            placeholder="Message..."
-                        />
-                        <button style={{ ...s.navItem(true), fontSize: '24px' }} type="submit">➤</button>
-                    </form>
-                )}
-            </div>
-
-            {/* Bottom Nav */}
-            <div style={s.bottomNav}>
-                <button style={s.navItem(false)}>👤</button>
-                <button style={s.navItem(false)}>🔍</button>
-                <button style={s.navItem(true)}>📺</button>
-                <button style={s.navItem(false)}>✉️</button>
-                <button style={s.navItem(false)}>🖼️</button>
+            {/* Bottom Nav (Mobile style icons) */}
+            <div className="bg-black py-2 d-flex justify-content-around border-top border-secondary d-md-none">
+                <Button variant="link" className="text-secondary p-0 fs-4">👤</Button>
+                <Button variant="link" className="text-secondary p-0 fs-4">🔍</Button>
+                <Button variant="link" className="text-warning p-0 fs-4">📺</Button>
+                <Button variant="link" className="text-secondary p-0 fs-4">✉️</Button>
+                <Button variant="link" className="text-secondary p-0 fs-4">🖼️</Button>
             </div>
         </div>
     );

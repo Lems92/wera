@@ -1,11 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useMediaQuery } from '../hooks/useMediaQuery';
+import { Navbar, Nav, Container, Button } from 'react-bootstrap';
 
-export default function Navbar() {
+export default function AppNavbar() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
-    const isMobile = useMediaQuery('(max-width: 600px)');
 
     const handleLogout = () => {
         logout();
@@ -13,57 +12,46 @@ export default function Navbar() {
     };
 
     return (
-        <nav style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: isMobile ? '1rem' : '2rem',
-            padding: isMobile ? '0.75rem 1rem' : '0.9rem 2rem',
-            borderBottom: '1px solid #e5e5e5',
-            background: '#fff',
-            fontSize: '14px',
-            fontWeight: '500',
-            flexWrap: 'wrap'
-        }}>
-            <Link to="/" style={{
-                fontSize: '22px', fontWeight: '700', letterSpacing: '-1px',
-                border: '2.5px solid #111', borderRadius: '8px',
-                padding: '2px 10px', color: '#111', textDecoration: 'none'
-            }}>
-                wera
-            </Link>
-
-            {!user ? (
-                <>
-                    <Link to="/login" style={{ color: '#111', textDecoration: 'none' }}>
-                        Se Connecter
-                    </Link>
-                    <Link to="/register" style={{ color: '#111', textDecoration: 'none' }}>
-                        Nouveau Compte
-                    </Link>
-                </>
-            ) : (
-                <span style={{ color: '#111' }}>Salut, {user.username} 👋</span>
-            )}
-
-            <div style={{
-                marginLeft: 'auto',
-                display: 'flex',
-                gap: isMobile ? '1rem' : '1.5rem',
-                flexWrap: 'wrap',
-                justifyContent: isMobile ? 'flex-start' : 'flex-end',
-                flexBasis: isMobile ? '100%' : 'auto'
-            }}>
-                <Link to="/about" style={{ color: '#111', textDecoration: 'none' }}>A propos</Link>
-                <Link to="/contact" style={{ color: '#111', textDecoration: 'none' }}>Contact</Link>
-                {user && (
-                    <button onClick={handleLogout} style={{
-                        background: 'none', border: 'none', cursor: 'pointer',
-                        color: '#e00', fontSize: '14px', fontWeight: '500'
-                    }}>
-                        Déconnexion
-                    </button>
-                )}
-            </div>
-        </nav>
+        <Navbar bg="white" expand="lg" className="border-bottom shadow-sm px-3">
+            <Container fluid>
+                <Navbar.Brand as={Link} to="/" className="fw-bold" style={{
+                    fontSize: '22px', letterSpacing: '-1px',
+                    border: '2.5px solid #111', borderRadius: '8px',
+                    padding: '2px 10px', color: '#111'
+                }}>
+                    wera
+                </Navbar.Brand>
+                
+                <Navbar.Toggle aria-controls="basic-navbar-nav" />
+                
+                <Navbar.Collapse id="basic-navbar-nav">
+                    <Nav className="me-auto align-items-center">
+                        {!user ? (
+                            <>
+                                <Nav.Link as={Link} to="/login" className="text-dark fw-medium">Se Connecter</Nav.Link>
+                                <Nav.Link as={Link} to="/register" className="text-dark fw-medium">Nouveau Compte</Nav.Link>
+                            </>
+                        ) : (
+                            <Navbar.Text className="text-dark fw-medium ms-lg-3">
+                                Salut, {user.username} 👋
+                            </Navbar.Text>
+                        )}
+                    </Nav>
+                    <Nav className="align-items-center">
+                        <Nav.Link as={Link} to="/about" className="text-dark fw-medium">A propos</Nav.Link>
+                        <Nav.Link as={Link} to="/contact" className="text-dark fw-medium">Contact</Nav.Link>
+                        {user && (
+                            <Button 
+                                variant="link" 
+                                onClick={handleLogout} 
+                                className="text-danger fw-medium text-decoration-none p-0 ms-lg-3"
+                            >
+                                Déconnexion
+                            </Button>
+                        )}
+                    </Nav>
+                </Navbar.Collapse>
+            </Container>
+        </Navbar>
     );
-}
+}

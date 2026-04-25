@@ -234,90 +234,119 @@ export default function Chat() {
         localStream.current?.getTracks().forEach(t => t.stop());
         socketRef.current?.disconnect();
         peerRef.current?.destroy();
-    };
-
-    return (
+    };    return (
         <div className="bg-dark text-white overflow-hidden d-flex flex-column" style={{ height: 'calc(100vh - 72px)' }}>
-            {/* Header / Stats */}
-            <div className="bg-black py-2 px-3 d-flex align-items-center justify-content-between border-bottom border-secondary">
-                <div className="d-flex align-items-center gap-2">
-                    <Badge bg="success" pill className="p-1" style={{ width: '10px', height: '10px' }}> </Badge>
-                    <small className="fw-bold">{onlineCount.toLocaleString()} en ligne</small>
-                </div>
-                <div className="d-flex gap-2">
-                    <Button variant="outline-light" size="sm" className="py-0 px-2 fw-bold small border-secondary text-uppercase">🇲🇬 Pays</Button>
-                    <Button variant="outline-light" size="sm" className="py-0 px-2 fw-bold small border-secondary text-uppercase">👤 Genre</Button>
-                </div>
-            </div>
-
-            {/* Main Area */}
-            <Container fluid className="flex-grow-1 p-0 position-relative d-flex flex-column">
-                <Row className="g-0 flex-grow-1">
-                    {/* Partner Video */}
-                    <Col md={6} className="bg-black position-relative border-end border-secondary d-flex align-items-center justify-content-center overflow-hidden">
-                        <video ref={remoteVideo} autoPlay playsInline className="w-100 h-100 object-fit-cover" />
+            
+            {/* Main Area with Responsive Split */}
+            <Container fluid className="flex-grow-1 p-0 d-flex flex-column overflow-hidden">
+                <Row className="g-0 flex-grow-1 h-100 flex-column flex-md-row">
+                    
+                    {/* TOP SECTION (Mobile) / LEFT SECTION (PC) : Partner or UI */}
+                    <Col md={6} className="h-50 h-md-100 bg-black position-relative border-bottom border-end border-secondary d-flex flex-column align-items-center justify-content-center overflow-hidden">
                         
-                        {/* Status Overlays */}
-                        {status === 'waiting' && (
-                            <div className="position-absolute inset-0 d-flex flex-column align-items-center justify-content-center bg-black bg-opacity-75 text-center p-3">
-                                <Spinner animation="border" variant="warning" className="mb-3" />
-                                <h3 className="fw-bold">Recherche...</h3>
-                                <p className="text-muted small">
-                                    {waitingTooLong ? "Un peu de patience... 🇲🇬" : "Recherche d'un partenaire en cours"}
-                                </p>
+                        {status === 'connected' ? (
+                            <video ref={remoteVideo} autoPlay playsInline className="w-100 h-100 object-fit-cover" />
+                        ) : (
+                            <div className="w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3 text-center">
+                                {/* OmeTV Style Logo Area */}
+                                <div className="mb-4 d-flex flex-column align-items-center">
+                                    <div className="border border-warning border-4 rounded-4 p-2 mb-2 d-flex flex-column align-items-center" style={{ width: '120px', background: 'rgba(255, 193, 7, 0.1)' }}>
+                                        <span className="fw-bold h2 mb-0 text-warning">Wera</span>
+                                        <span className="fw-bold h4 mb-0 text-success">TV</span>
+                                    </div>
+                                    <div className="d-flex align-items-center gap-2">
+                                        <Badge bg="success" pill className="p-1" style={{ width: '10px', height: '10px' }}> </Badge>
+                                        <span className="small fw-bold">{onlineCount.toLocaleString()} Users online</span>
+                                    </div>
+                                </div>
+
+                                {/* Filters (OmeTV Mobile Style) */}
+                                <div className="d-flex gap-2 w-100 px-2" style={{ maxWidth: '400px' }}>
+                                    <Button variant="outline-light" className="flex-grow-1 d-flex justify-content-between align-items-center py-2 px-3 border-secondary bg-dark bg-opacity-50">
+                                        <small className="fw-bold text-uppercase opacity-75">Country:</small>
+                                        <span className="fs-4">🇲🇬</span>
+                                    </Button>
+                                    <Button variant="outline-light" className="flex-grow-1 d-flex justify-content-between align-items-center py-2 px-3 border-secondary bg-dark bg-opacity-50">
+                                        <small className="fw-bold text-uppercase opacity-75">I am:</small>
+                                        <span className="fs-4">👤</span>
+                                    </Button>
+                                </div>
+
+                                {status === 'waiting' && (
+                                    <div className="mt-4">
+                                        <Spinner animation="border" variant="warning" size="sm" className="me-2" />
+                                        <small className="fw-bold text-warning">Recherche...</small>
+                                    </div>
+                                )}
                             </div>
                         )}
+
+                        {/* Chat Overlay (PC style or when connected) */}
+                        {status === 'connected' && (
+                            <div className="position-absolute bottom-0 start-0 w-100 p-3 pointer-events-none d-flex flex-column gap-1" style={{ maxHeight: '40%', overflowY: 'auto', background: 'linear-gradient(transparent, rgba(0,0,0,0.7))' }}>
+                                {messages.slice(-3).map((msg, i) => (
+                                    <div key={i} className="small">
+                                        <span className={msg.self ? 'text-warning fw-bold' : 'text-white fw-bold'}>{msg.self ? 'Moi' : msg.from}: </span>
+                                        <span>{msg.text}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </Col>
+
+                    {/* BOTTOM SECTION (Mobile) / RIGHT SECTION (PC) : Local Video */}
+                    <Col md={6} className="h-50 h-md-100 bg-black position-relative d-flex align-items-center justify-content-center overflow-hidden">
+                        <video 
+                            ref={localVideo} 
+                            autoPlay 
+                            playsInline 
+                            muted 
+                            className="w-100 h-100 object-fit-cover"
+                        />
+                        
+                        {/* State Overlays */}
                         {status === 'idle' && (
-                            <div className="position-absolute inset-0 d-flex flex-column align-items-center justify-content-center bg-black bg-opacity-75">
-                                <Button variant="success" size="lg" pill className="px-5 py-3 fw-bold shadow-lg" onClick={findPartner}>
+                            <div className="position-absolute inset-0 d-flex flex-column align-items-center justify-content-center bg-black bg-opacity-50">
+                                <Button variant="success" size="lg" className="rounded-pill px-5 py-3 fw-bold shadow-lg" onClick={findPartner}>
                                     DÉMARRER
                                 </Button>
                             </div>
                         )}
 
-                        {/* Chat Overlay on Partner Video (PC view mostly) */}
-                        <div className="position-absolute bottom-0 start-0 w-100 p-3 pointer-events-none d-none d-md-flex flex-column gap-1" style={{ maxHeight: '40%', overflowY: 'auto', background: 'linear-gradient(transparent, rgba(0,0,0,0.7))' }}>
-                            {messages.slice(-5).map((msg, i) => (
-                                <div key={i} className="small">
-                                    <span className={msg.self ? 'text-warning fw-bold' : 'text-white fw-bold'}>{msg.self ? 'Moi' : msg.from}: </span>
-                                    <span>{msg.text}</span>
-                                </div>
-                            ))}
+                        {/* Rules Overlay */}
+                        <div className="position-absolute bottom-0 start-0 w-100 p-2 text-center text-white-50 small" style={{ fontSize: '9px', background: 'rgba(0,0,0,0.3)' }}>
+                            By using this videochat you agree with our rules. Rules violators will be banned.
                         </div>
-                    </Col>
 
-                    {/* Local Video */}
-                    <Col md={6} className="bg-black position-relative d-flex align-items-center justify-content-center overflow-hidden">
-                        <video ref={localVideo} autoPlay playsInline muted className="w-100 h-100 object-fit-cover d-none d-md-block" />
-                        {/* Mobile view overlay for local camera */}
-                        <video ref={localVideo} autoPlay playsInline muted className="position-absolute top-2 end-2 border border-secondary rounded shadow-lg d-md-none" style={{ width: '100px', height: '130px', objectFit: 'cover', zIndex: 10 }} />
-                        
-                        {/* Rules/Info */}
-                        <div className="position-absolute bottom-0 start-0 w-100 p-2 text-center text-secondary small d-none d-md-block" style={{ fontSize: '10px' }}>
-                            En utilisant ce chat, vous acceptez nos règles. Les contrevenants seront bannis.
-                        </div>
+                        {/* Quick Controls on Mobile */}
+                        {status === 'connected' && (
+                            <div className="position-absolute top-0 end-0 p-3 d-flex flex-column gap-2 d-md-none" style={{ zIndex: 100 }}>
+                                <Button variant="primary" className="rounded-circle p-0 d-flex align-items-center justify-content-center" style={{ width: '45px', height: '45px' }} onClick={skip}>⏭</Button>
+                                <Button variant="danger" className="rounded-circle p-0 d-flex align-items-center justify-content-center" style={{ width: '45px', height: '45px' }} onClick={stop}>✖</Button>
+                            </div>
+                        )}
                     </Col>
                 </Row>
 
-                {/* Controls & Chat Input */}
-                <div className="bg-black border-top border-secondary p-2 p-md-3 mt-auto">
-                    <Row className="align-items-center g-2">
-                        <Col xs="auto">
-                            <Button variant="danger" onClick={stop} className="fw-bold px-3">STOP</Button>
+                {/* Controls & Chat Input (PC / Bottom) */}
+                <div className="bg-black border-top border-secondary p-2 p-md-3 mt-auto shadow-lg" style={{ zIndex: 20 }}>
+                    <Row className="align-items-center g-2 max-width-1200 mx-auto w-100">
+                        <Col xs="auto" className="d-none d-md-block">
+                            <Button variant="danger" onClick={stop} className="fw-bold px-4 rounded-3">STOP</Button>
                         </Col>
-                        <Col xs="auto">
-                            <Button variant="primary" onClick={skip} className="fw-bold px-3">SUIVANT</Button>
+                        <Col xs="auto" className="d-none d-md-block">
+                            <Button variant="primary" onClick={skip} className="fw-bold px-4 rounded-3">SUIVANT</Button>
                         </Col>
-                        <Col className="position-relative">
+                        <Col className="position-relative px-md-4">
                             <Form onSubmit={sendMessage} className="d-flex gap-2">
                                 <Form.Control
                                     value={inputMsg}
                                     onChange={e => setInputMsg(e.target.value)}
-                                    placeholder="Écrire un message..."
+                                    placeholder={status === 'connected' ? "Écrire un message..." : "Connectez-vous pour chanter"}
                                     disabled={status !== 'connected'}
                                     className="bg-dark text-white border-secondary rounded-pill px-4 py-2"
                                 />
-                                <Button variant="warning" type="submit" disabled={status !== 'connected'} className="rounded-circle d-flex align-items-center justify-content-center" style={{ width: '42px', height: '42px' }}>
+                                <Button variant="warning" type="submit" disabled={status !== 'connected'} className="rounded-circle d-flex align-items-center justify-content-center border-0 shadow-sm" style={{ width: '42px', height: '42px' }}>
                                     ➤
                                 </Button>
                             </Form>
@@ -326,13 +355,13 @@ export default function Chat() {
                 </div>
             </Container>
 
-            {/* Bottom Nav (Mobile style icons) */}
-            <div className="bg-black py-2 d-flex justify-content-around border-top border-secondary d-md-none">
-                <Button variant="link" className="text-secondary p-0 fs-4">👤</Button>
-                <Button variant="link" className="text-secondary p-0 fs-4">🔍</Button>
-                <Button variant="link" className="text-warning p-0 fs-4">📺</Button>
-                <Button variant="link" className="text-secondary p-0 fs-4">✉️</Button>
-                <Button variant="link" className="text-secondary p-0 fs-4">🖼️</Button>
+            {/* Bottom Nav (OmeTV Style Icons) */}
+            <div className="bg-black py-2 d-flex justify-content-around border-top border-secondary d-md-none" style={{ background: '#0a0a0a' }}>
+                <Button variant="link" className="text-secondary p-0 fs-3 opacity-50">👤</Button>
+                <Button variant="link" className="text-secondary p-0 fs-3 opacity-50">🔍</Button>
+                <Button variant="link" className="text-success p-0 fs-3">📺</Button>
+                <Button variant="link" className="text-secondary p-0 fs-3 opacity-50">✉️</Button>
+                <Button variant="link" className="text-secondary p-0 fs-3 opacity-50">🖼️</Button>
             </div>
         </div>
     );

@@ -42,33 +42,31 @@ export default function Home() {
                     {/* Spacer for navbar */}
                     <div className="mt-5 pt-5 d-none d-lg-block"></div>
 
-                    <div className="ps-md-4 position-relative">
-                        <div className="d-flex align-items-center mb-2">
-                            <h2 className="fw-bold mb-0 me-3" style={{ fontSize: '2.5rem', color: '#1A2332' }}>Tairo ary</h2>
+                    <div className="ps-md-4 flex-grow-1 d-flex flex-column justify-content-center">
+                        <div className="d-flex align-items-center mb-4 ms-md-5 translate-middle-y" style={{ marginTop: '20vh' }}>
+                            <h2 className="fw-bold mb-0 me-3" style={{ fontSize: '2.5rem', color: '#1A2332', fontFamily: "'Outfit', sans-serif" }}>Tairo ary</h2>
                             {/* Decorative Arrow */}
-                            <svg width="60" height="40" viewBox="0 0 60 40" fill="none" className="d-none d-md-block">
-                                <path d="M2 15C15 5 35 5 55 30" stroke="#1A2332" strokeWidth="2" strokeLinecap="round"/>
-                                <path d="M48 28L55 30L58 23" stroke="#1A2332" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <svg width="100" height="60" viewBox="0 0 100 60" fill="none" className="d-none d-md-block">
+                                <path d="M10 20C30 10 70 10 90 50" stroke="#1A2332" strokeWidth="3" strokeLinecap="round"/>
+                                <path d="M80 45L90 50L95 40" stroke="#1A2332" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                         </div>
-
-                        <h1 className="fw-bold text-uppercase mt-auto mb-0" style={{ 
-                            fontSize: 'clamp(40px, 8vw, 90px)', 
-                            lineHeight: '0.9', 
-                            color: '#1A2332',
-                            marginTop: '100px !important',
-                            position: 'absolute',
-                            bottom: '-250px',
-                            left: '20px'
-                        }}>
-                            NAHITA<br />AKAMA<br />IHANY
-                        </h1>
                     </div>
+
+                    <h1 className="fw-bold text-uppercase p-4 p-md-5 mb-0" style={{ 
+                        fontSize: 'clamp(40px, 8vw, 100px)', 
+                        lineHeight: '0.85', 
+                        color: '#1A2332',
+                        fontFamily: "'Black Han Sans', sans-serif",
+                        zIndex: 5
+                    }}>
+                        NAHITA<br />AKAMA<br />IHANY
+                    </h1>
 
                     {/* Central Button Overlay */}
                     <Button
                         onClick={handleStart}
-                        className="rounded-circle d-flex align-items-center justify-content-center shadow-lg border-0 position-absolute"
+                        className="rounded-circle d-flex align-items-center justify-content-center shadow-lg border-0 position-absolute pulse-button"
                         style={{ 
                             width: '100px', 
                             height: '100px', 
@@ -99,9 +97,41 @@ export default function Home() {
 
             <style>{`
                 .bg-warning { background-color: #FFEC3D !important; }
+                
+                .pulse-button {
+                    animation: heartbeat 2s infinite;
+                }
+
+                @keyframes heartbeat {
+                    0% {
+                        transform: translate(-50%, -50%) scale(1);
+                        box-shadow: 0 0 0 0 rgba(26, 35, 50, 0.7);
+                    }
+                    50% {
+                        transform: translate(-50%, -50%) scale(1.08);
+                        box-shadow: 0 0 0 25px rgba(26, 35, 50, 0);
+                    }
+                    100% {
+                        transform: translate(-50%, -50%) scale(1);
+                        box-shadow: 0 0 0 0 rgba(26, 35, 50, 0);
+                    }
+                }
+
                 @media (max-width: 991px) {
                     h1 { position: static !important; margin-top: 50px !important; }
                     .rounded-circle { left: 50% !important; top: 100% !important; margin-top: -50px; }
+                    
+                    @keyframes heartbeat {
+                        0% {
+                            transform: translate(-50%, -50%) scale(1);
+                        }
+                        50% {
+                            transform: translate(-50%, -50%) scale(1.1);
+                        }
+                        100% {
+                            transform: translate(-50%, -50%) scale(1);
+                        }
+                    }
                 }
             `}</style>
         </div>

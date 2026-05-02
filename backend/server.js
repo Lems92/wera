@@ -101,7 +101,10 @@ const corsOptions = {
 
 const io = new Server(server, {
     cors: corsOptions,
-    transports: ['websocket', 'polling']
+    transports: ['polling', 'websocket'],
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    allowEIO3: true
 });
 
 // PeerJS signaling server (used by peerjs in the frontend)

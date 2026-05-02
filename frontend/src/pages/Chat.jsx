@@ -81,13 +81,13 @@ export default function Chat() {
 
     const initSocket = () => {
         socketRef.current = io(SOCKET_URL, {
-            // Priority to websocket, fallback to polling if needed.
-            transports: ['websocket', 'polling'],
+            // Start with polling for better reliability, then upgrade to websocket.
+            transports: ['polling', 'websocket'],
             withCredentials: true,
             reconnection: true,
             reconnectionAttempts: 10,
             reconnectionDelay: 500,
-            timeout: 20000
+            timeout: 30000
         });
 
         socketRef.current.on('connect', () => {

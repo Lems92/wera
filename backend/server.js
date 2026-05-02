@@ -74,7 +74,12 @@ function isOriginAllowed(origin) {
     if (IS_RENDER) {
         try {
             const { hostname, protocol } = new URL(origin);
-            if (protocol === 'https:' && (hostname.endsWith('.onrender.com') || hostname.endsWith('.vercel.app') || hostname.endsWith('.netlify.app'))) {
+            const isDomainAllowed = hostname.endsWith('.onrender.com') || 
+                                  hostname.endsWith('.vercel.app') || 
+                                  hostname.endsWith('.netlify.app') ||
+                                  hostname === 'wera.mg' ||
+                                  hostname === 'www.wera.mg';
+            if (protocol === 'https:' && isDomainAllowed) {
                 return true;
             }
         } catch {
@@ -130,8 +135,13 @@ io.engine.on('connection_error', (err) => {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
-app.use(limiter);
+const limiter = rateLimit({ 
+    windowMs: 15 * 60 * 1000, 
+    max: 1000, // Increased for polling sockets if they hit express routes
+    message: 'Too many requests, please try again later.'
+});
+// Apply limiter only to API routes, avoiding Socket.IO and PeerJS internal routes if possible
+app.use('/api', limiter);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);

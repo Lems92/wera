@@ -81,10 +81,8 @@ export default function Chat() {
 
     const initSocket = () => {
         socketRef.current = io(SOCKET_URL, {
-            // Polling is the most reliable transport on some networks/proxies.
-            // We disable upgrade to avoid flaky websocket handshakes/timeouts.
-            transports: ['polling'],
-            upgrade: false,
+            // Priority to websocket, fallback to polling if needed.
+            transports: ['websocket', 'polling'],
             withCredentials: true,
             reconnection: true,
             reconnectionAttempts: 10,

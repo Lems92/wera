@@ -331,7 +331,8 @@ export default function Chat() {
             height: '100%',
             objectFit: 'cover',
             background: '#1a1a1a',
-            display: 'block'
+            display: 'block',
+            transform: 'scaleX(1)'
         },
         localVideo: {
             position: 'absolute',
@@ -341,7 +342,8 @@ export default function Chat() {
             height: isMobile ? '90px' : (isNarrow ? '105px' : '120px'),
             objectFit: 'cover', borderRadius: '12px',
             border: '2px solid #FFE000', background: '#222',
-            zIndex: 10
+            zIndex: 10,
+            transform: 'scaleX(-1)'
         },
         controls: {
             height: isMobile ? 'auto' : '64px',

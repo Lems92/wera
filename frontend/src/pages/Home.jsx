@@ -2,9 +2,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { API_URL } from '../config';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import AdSlot from '../components/AdSlot';
+import heroImg from '../assets/hero.png';
 
 export default function Home() {
     const { user } = useAuth();
@@ -51,75 +51,119 @@ export default function Home() {
                 padding: '3rem 2.5rem',
                 display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'flex-end',
+                justifyContent: 'space-between',
                 position: 'relative'
             }}>
-                <h1 style={{
-                    fontFamily: "'Black Han Sans', sans-serif",
-                    fontSize: 'clamp(48px, 6vw, 80px)',
-                    lineHeight: 1,
-                    color: '#111',
-                    textTransform: 'uppercase',
-                    letterSpacing: '-1px'
+                {/* Tairo ary avec flèche */}
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    gap: '0.5rem',
+                    paddingTop: '1rem'
                 }}>
-                    NAHITA<br />AKAMA<br />IHANY
-                </h1>
-
-                <div style={{ marginTop: '1.25rem', maxWidth: '520px' }}>
-                    <AdSlot placement="home" minHeight={90} style={{ background: 'rgba(255,255,255,0.6)' }} />
+                    <span style={{
+                        fontFamily: "'Black Han Sans', sans-serif",
+                        fontSize: 'clamp(20px, 2.5vw, 28px)',
+                        color: '#111',
+                        fontWeight: 700
+                    }}>
+                        Tairo ary
+                    </span>
+                    {/* Flèche courbée pointant vers le bouton */}
+                    <svg
+                        width="90" height="70"
+                        viewBox="0 0 90 70"
+                        fill="none"
+                        style={{ marginLeft: '2rem' }}
+                    >
+                        <path
+                            d="M 10 5 C 40 5, 80 20, 80 55"
+                            stroke="#111" strokeWidth="2.5" strokeLinecap="round" fill="none"
+                        />
+                        <path
+                            d="M 72 50 L 80 58 L 87 50"
+                            stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"
+                        />
+                    </svg>
                 </div>
 
-                {/* Bouton téléphone */}
+                {/* Texte principal en bas */}
+                <div>
+                    <h1 style={{
+                        fontFamily: "'Black Han Sans', sans-serif",
+                        fontSize: 'clamp(48px, 6vw, 80px)',
+                        lineHeight: 1,
+                        color: '#111',
+                        textTransform: 'uppercase',
+                        letterSpacing: '-1px',
+                        margin: 0
+                    }}>
+                        NAHITA<br />AKAMA<br />IHANY
+                    </h1>
+
+                    <div style={{ marginTop: '1.25rem', maxWidth: '520px' }}>
+                        <AdSlot placement="home" minHeight={90} style={{ background: 'rgba(255,255,255,0.6)' }} />
+                    </div>
+                </div>
+
+                {/* Bouton caméra vidéo centré entre les deux colonnes */}
                 <button
                     onClick={handleStart}
                     style={{
                         position: isNarrow ? 'static' : 'absolute',
                         top: isNarrow ? undefined : '50%',
-                        right: isNarrow ? undefined : '-28px',
+                        right: isNarrow ? undefined : '-44px',
                         transform: isNarrow ? 'none' : 'translateY(-50%)',
-                        width: '56px', height: '56px',
+                        width: '88px', height: '88px',
                         borderRadius: '50%',
-                        background: '#333',
+                        background: '#111',
                         border: 'none',
                         cursor: 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         zIndex: 10,
-                        transition: 'transform 0.2s',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                        transition: 'transform 0.2s, box-shadow 0.2s',
+                        boxShadow: '0 6px 24px rgba(0,0,0,0.35)',
+                        marginTop: isNarrow ? '1.5rem' : undefined
                     }}
                     onMouseEnter={e => {
-                        if (!isNarrow) e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
-                        else e.currentTarget.style.transform = 'scale(1.05)';
+                        if (!isNarrow) e.currentTarget.style.transform = 'translateY(-50%) scale(1.08)';
+                        else e.currentTarget.style.transform = 'scale(1.06)';
+                        e.currentTarget.style.boxShadow = '0 8px 28px rgba(0,0,0,0.45)';
                     }}
                     onMouseLeave={e => {
                         if (!isNarrow) e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
                         else e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow = '0 6px 24px rgba(0,0,0,0.35)';
                     }}
                     title="Commencer"
                 >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                        stroke="#FFE000" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.59 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7a2 2 0 0 1 1.72 2.02z" />
+                    {/* Icône caméra vidéo */}
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="white">
+                        <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.723v6.554a1 1 0 0 1-1.447.894L15 14v-4z" />
+                        <rect x="2" y="7" width="13" height="10" rx="2" />
                     </svg>
                 </button>
             </div>
 
             {/* Côté droit - photo */}
             <div style={{
-                background: '#b5cce0',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 minHeight: isNarrow ? '320px' : '500px',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                position: 'relative'
             }}>
-                <div style={{ textAlign: 'center', color: '#fff', opacity: 0.7 }}>
-                    <div style={{ fontSize: '48px', marginBottom: '1rem' }}>🇲🇬</div>
-                    <p style={{ fontSize: '14px' }}>
-                        Remplace cette zone par<br />une belle photo de Madagascar
-                    </p>
-                    <p style={{ fontSize: '12px', marginTop: '0.5rem', opacity: 0.6 }}>
-                        (dossier: frontend/public/hero.jpg)
-                    </p>
-                </div>
+                <img
+                    src={heroImg}
+                    alt="Wera video call"
+                    style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        position: 'absolute',
+                        top: 0, left: 0
+                    }}
+                />
             </div>
 
         </div>

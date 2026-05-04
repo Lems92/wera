@@ -16,49 +16,57 @@ export default function Navbar() {
         <nav style={{
             display: 'flex',
             alignItems: 'center',
-            gap: isMobile ? '1rem' : '2rem',
             padding: isMobile ? '0.75rem 1rem' : '0.9rem 2rem',
-            borderBottom: '1px solid #e5e5e5',
             background: '#fff',
-            fontSize: '14px',
-            fontWeight: '500',
-            flexWrap: 'wrap'
+            fontSize: '15px',
+            fontWeight: '600',
         }}>
             <Link to="/" style={{
-                fontSize: '22px', fontWeight: '700', letterSpacing: '-1px',
-                border: '2.5px solid #111', borderRadius: '8px',
-                padding: '2px 10px', color: '#111', textDecoration: 'none'
+                fontSize: '22px',
+                fontWeight: '700',
+                background: '#f5f0c8',
+                borderRadius: '50px',
+                padding: '4px 18px',
+                color: '#111',
+                textDecoration: 'none',
+                letterSpacing: '-0.5px',
+                flexShrink: 0,
             }}>
                 wera
             </Link>
 
-            {!user ? (
-                <>
-                    <Link to="/login" style={{ color: '#111', textDecoration: 'none' }}>
-                        Se Connecter
-                    </Link>
-                    <Link to="/register" style={{ color: '#111', textDecoration: 'none' }}>
-                        Nouveau Compte
-                    </Link>
-                </>
-            ) : (
-                <span style={{ color: '#111' }}>Salut, {user.username} 👋</span>
-            )}
+            <div style={{
+                display: 'flex',
+                gap: isMobile ? '1rem' : '2rem',
+                marginLeft: isMobile ? '1rem' : '2.5rem',
+                alignItems: 'center',
+            }}>
+                {!user ? (
+                    <>
+                        <Link to="/login" style={{ color: '#111', textDecoration: 'none' }}>
+                            Se Connecter
+                        </Link>
+                        <Link to="/register" style={{ color: '#111', textDecoration: 'none' }}>
+                            Nouveau compte
+                        </Link>
+                    </>
+                ) : (
+                    <span style={{ color: '#111' }}>Salut, {user.username} 👋</span>
+                )}
+            </div>
 
             <div style={{
                 marginLeft: 'auto',
                 display: 'flex',
-                gap: isMobile ? '1rem' : '1.5rem',
-                flexWrap: 'wrap',
-                justifyContent: isMobile ? 'flex-start' : 'flex-end',
-                flexBasis: isMobile ? '100%' : 'auto'
+                gap: isMobile ? '1rem' : '2rem',
+                alignItems: 'center',
             }}>
-                <Link to="/about" style={{ color: '#111', textDecoration: 'none' }}>A propos</Link>
+                <Link to="/about" style={{ color: '#111', textDecoration: 'none' }}>A Propos</Link>
                 <Link to="/contact" style={{ color: '#111', textDecoration: 'none' }}>Contact</Link>
                 {user && (
                     <button onClick={handleLogout} style={{
                         background: 'none', border: 'none', cursor: 'pointer',
-                        color: '#e00', fontSize: '14px', fontWeight: '500'
+                        color: '#e00', fontSize: '15px', fontWeight: '600'
                     }}>
                         Déconnexion
                     </button>

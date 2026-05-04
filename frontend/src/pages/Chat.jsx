@@ -79,17 +79,18 @@ export default function Chat() {
 
     const initSocket = () => {
         socketRef.current = io(SOCKET_URL, {
-            // Prefer websocket first on Render — polling sessions get lost on upgrade,
-            // causing 400 Bad Request on subsequent polls with a valid sid.
-            // Polling kept as fallback for restrictive networks.
-            transports: ['websocket', 'polling'],
+            // Polling first — survives Render free-tier cold-starts (30-60s wake-up)
+            // where WebSocket handshake would time out. Upgrades to websocket once warm.
+            transports: ['polling', 'websocket'],
             // Auth uses Bearer tokens, not cookies, so credentials are not needed.
-            // Removing this avoids strict CORS preflight failures on Render.
+            // withCredentials:true was causing strict CORS preflight failures on Render.
             withCredentials: false,
             reconnection: true,
             reconnectionAttempts: 10,
-            reconnectionDelay: 500,
-            timeout: 30000
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            // Long enough to absorb a Render free-tier cold-start.
+            timeout: 60000
         });
 
         socketRef.current.on('connect', () => {

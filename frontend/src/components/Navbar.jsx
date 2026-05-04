@@ -1,12 +1,12 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useMediaQuery } from '../hooks/useMediaQuery';
+import './Navbar.css';
 
 export default function Navbar() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
-    const isMobile = useMediaQuery('(max-width: 600px)');
-    const isVerySmall = useMediaQuery('(max-width: 420px)');
+    const location = useLocation();
+    const isHome = location.pathname === '/';
 
     const handleLogout = () => {
         logout();
@@ -14,75 +14,27 @@ export default function Navbar() {
     };
 
     return (
-        <nav style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            padding: isMobile ? '0.75rem 1rem' : '0.9rem 2rem',
-            background: 'rgba(255, 255, 255, 0.22)',
-            backdropFilter: 'blur(10px)',
-            WebkitBackdropFilter: 'blur(10px)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.25)',
-            fontSize: '15px',
-            fontWeight: '600',
-        }}>
-            <Link to="/" style={{
-                fontSize: '22px',
-                fontWeight: '700',
-                background: '#f5f0c8',
-                borderRadius: '50px',
-                padding: '4px 18px',
-                color: '#111',
-                textDecoration: 'none',
-                letterSpacing: '-0.5px',
-                flexShrink: 0,
-            }}>
-                wera
-            </Link>
-
-            <div style={{
-                display: 'flex',
-                gap: isMobile ? '1rem' : '2rem',
-                marginLeft: isMobile ? '1rem' : '2.5rem',
-                alignItems: 'center',
-                flexWrap: isVerySmall ? 'wrap' : 'nowrap',
-            }}>
+        <header className={`wera-navbar ${isHome ? 'wera-navbar--home' : 'wera-navbar--app'}`}>
+            <Link to="/" className="wera-navbar__logo">wera</Link>
+            <nav className="wera-navbar__links" aria-label="Primary">
                 {!user ? (
                     <>
-                        <Link to="/login" style={{ color: '#111', textDecoration: 'none' }}>
-                            Se Connecter
-                        </Link>
-                        <Link to="/register" style={{ color: '#111', textDecoration: 'none' }}>
-                            Nouveau compte
-                        </Link>
+                        <Link className="wera-navbar__link" to="/login">Se Connecter</Link>
+                        <Link className="wera-navbar__link" to="/register">Nouveau compte</Link>
                     </>
                 ) : (
-                    <span style={{ color: '#111' }}>Salut, {user.username} 👋</span>
+                    <span className="wera-navbar__link">Salut, {user.username}</span>
                 )}
-            </div>
 
-            <div style={{
-                marginLeft: 'auto',
-                display: 'flex',
-                gap: isMobile ? '1rem' : '2rem',
-                alignItems: 'center',
-                flexWrap: isVerySmall ? 'wrap' : 'nowrap',
-            }}>
-                <Link to="/about" style={{ color: '#111', textDecoration: 'none' }}>A Propos</Link>
-                <Link to="/contact" style={{ color: '#111', textDecoration: 'none' }}>Contact</Link>
+                <Link className="wera-navbar__link" to="/about">A Propos</Link>
+                <Link className="wera-navbar__link" to="/contact">Contact</Link>
+
                 {user && (
-                    <button onClick={handleLogout} style={{
-                        background: 'none', border: 'none', cursor: 'pointer',
-                        color: '#e00', fontSize: '15px', fontWeight: '600'
-                    }}>
+                    <button className="wera-navbar__button" onClick={handleLogout}>
                         Déconnexion
                     </button>
                 )}
-            </div>
-        </nav>
+            </nav>
+        </header>
     );
 }

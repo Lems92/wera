@@ -6,6 +6,7 @@ export default function Navbar() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const isMobile = useMediaQuery('(max-width: 600px)');
+    const isVerySmall = useMediaQuery('(max-width: 420px)');
 
     const handleLogout = () => {
         logout();
@@ -14,10 +15,18 @@ export default function Navbar() {
 
     return (
         <nav style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1000,
             display: 'flex',
             alignItems: 'center',
             padding: isMobile ? '0.75rem 1rem' : '0.9rem 2rem',
-            background: '#fff',
+            background: 'rgba(255, 255, 255, 0.22)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.25)',
             fontSize: '15px',
             fontWeight: '600',
         }}>
@@ -40,6 +49,7 @@ export default function Navbar() {
                 gap: isMobile ? '1rem' : '2rem',
                 marginLeft: isMobile ? '1rem' : '2.5rem',
                 alignItems: 'center',
+                flexWrap: isVerySmall ? 'wrap' : 'nowrap',
             }}>
                 {!user ? (
                     <>
@@ -60,6 +70,7 @@ export default function Navbar() {
                 display: 'flex',
                 gap: isMobile ? '1rem' : '2rem',
                 alignItems: 'center',
+                flexWrap: isVerySmall ? 'wrap' : 'nowrap',
             }}>
                 <Link to="/about" style={{ color: '#111', textDecoration: 'none' }}>A Propos</Link>
                 <Link to="/contact" style={{ color: '#111', textDecoration: 'none' }}>Contact</Link>

@@ -230,7 +230,7 @@ io.on('connection', (socket) => {
 
         // Si quelqu'un attend déjà → on les apparie
         let partner;
-        const requeue = []; // candidates skipped due to recent-pairing — put them back after.
+        const recentSkipped = []; // valid candidates we deferred because of recent-pairing.
         while (waitingQueue.length > 0 && !partner) {
             const candidate = waitingQueue.shift();
             // Skip invalid / disconnected sockets or self-match.
@@ -238,16 +238,21 @@ io.on('connection', (socket) => {
             if (candidate.id === socket.id) continue;
             // Skip if candidate already paired (stale queue entry).
             if (activePairs.has(candidate.id)) continue;
-            // Skip if we *just* unpaired with this candidate — give "Suivant" a chance
-            // to actually find someone new. Re-queue them so they're not lost.
+            // Defer recently-paired candidates so "Suivant" prefers someone new
+            // — but keep them as a fallback if no one else is available.
             if (recentlyPaired(socket.id, candidate.id)) {
-                requeue.push(candidate);
+                recentSkipped.push(candidate);
                 continue;
             }
             partner = candidate;
         }
-        // Put the temporarily-skipped candidates back at the head of the queue.
-        if (requeue.length) waitingQueue.unshift(...requeue);
+        // Fallback: only the previous partner is online → reuse them rather than
+        // leaving the user stuck in "Recherche...".
+        if (!partner && recentSkipped.length) {
+            partner = recentSkipped.shift();
+        }
+        // Re-queue any remaining deferred candidates at the head of the queue.
+        if (recentSkipped.length) waitingQueue.unshift(...recentSkipped);
 
         if (partner) {
 

@@ -129,6 +129,9 @@ export default function Chat() {
         });
 
         socketRef.current.on('skipped', () => {
+            // Only fall back to idle if we're not actively searching for a new partner.
+            // After "Suivant", we want to stay in 'waiting' until partner_found arrives.
+            if (statusRef.current === 'waiting' || pendingFindRef.current) return;
             setStatus('idle');
         });
     };
@@ -233,14 +236,19 @@ export default function Chat() {
     const findPartner = () => {
         if (!localStream.current) return alert('Caméra non disponible');
         pendingFindRef.current = true;
-        maybeStartSearch();
-        // If peer/socket aren't ready yet, UI still shows "Recherche..." and auto-starts when ready.
+        // Update the ref synchronously BEFORE maybeStartSearch so its
+        // "if (statusRef.current === 'connected') bail" guard doesn't
+        // misfire on the stale 'connected' value during a skip.
+        statusRef.current = 'waiting';
         setStatus('waiting');
+        maybeStartSearch();
     };
 
     const skip = () => {
         currentCall.current?.close();
         if (remoteVideo.current) remoteVideo.current.srcObject = null;
+        setPartnerName('');
+        setMessages([]);
         socketRef.current.emit('skip');
         findPartner();
     };

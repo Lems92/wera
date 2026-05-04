@@ -192,12 +192,26 @@ app.get('/api/check-location', async (req, res) => {
 // ─── Matchmaking ───────────────────────────────────────────
 const waitingQueue = [];          // file d'attente
 const activePairs = new Map();    // socketId -> socketId
+const lastPartner = new Map();    // socketId -> previous partnerId (for anti-immediate-rematch)
+const RECENT_PARTNER_WINDOW_MS = 30 * 1000; // avoid rematching the same person for 30s after a skip
+const lastPartnerAt = new Map();  // socketId -> timestamp when lastPartner was recorded
 
 function removeFromWaitingQueue(socket) {
     // Remove all occurrences (defensive against duplicates).
     for (let i = waitingQueue.length - 1; i >= 0; i--) {
         if (waitingQueue[i]?.id === socket.id) waitingQueue.splice(i, 1);
     }
+}
+
+function recentlyPaired(aId, bId) {
+    const now = Date.now();
+    const aPrev = lastPartner.get(aId);
+    const bPrev = lastPartner.get(bId);
+    const aTs = lastPartnerAt.get(aId) || 0;
+    const bTs = lastPartnerAt.get(bId) || 0;
+    if (aPrev === bId && now - aTs < RECENT_PARTNER_WINDOW_MS) return true;
+    if (bPrev === aId && now - bTs < RECENT_PARTNER_WINDOW_MS) return true;
+    return false;
 }
 
 io.on('connection', (socket) => {
@@ -216,6 +230,7 @@ io.on('connection', (socket) => {
 
         // Si quelqu'un attend déjà → on les apparie
         let partner;
+        const requeue = []; // candidates skipped due to recent-pairing — put them back after.
         while (waitingQueue.length > 0 && !partner) {
             const candidate = waitingQueue.shift();
             // Skip invalid / disconnected sockets or self-match.
@@ -223,8 +238,16 @@ io.on('connection', (socket) => {
             if (candidate.id === socket.id) continue;
             // Skip if candidate already paired (stale queue entry).
             if (activePairs.has(candidate.id)) continue;
+            // Skip if we *just* unpaired with this candidate — give "Suivant" a chance
+            // to actually find someone new. Re-queue them so they're not lost.
+            if (recentlyPaired(socket.id, candidate.id)) {
+                requeue.push(candidate);
+                continue;
+            }
             partner = candidate;
         }
+        // Put the temporarily-skipped candidates back at the head of the queue.
+        if (requeue.length) waitingQueue.unshift(...requeue);
 
         if (partner) {
 
@@ -264,11 +287,11 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Passer au suivant
+    // Passer au suivant — the client immediately re-emits 'find_partner',
+    // so we don't send 'skipped' here (it would race the client into 'idle').
     socket.on('skip', () => {
         leaveCurrentPair(socket);
         removeFromWaitingQueue(socket);
-        socket.emit('skipped');
     });
 
     // Annuler la recherche (quand l'utilisateur stop pendant "Recherche en cours...")
@@ -281,6 +304,9 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         leaveCurrentPair(socket);
         removeFromWaitingQueue(socket);
+        // Clean up the anti-rematch trackers so we don't leak memory.
+        lastPartner.delete(socket.id);
+        lastPartnerAt.delete(socket.id);
         console.log('❌ Déconnecté:', socket.id);
     });
 });
@@ -291,6 +317,12 @@ function leaveCurrentPair(socket) {
         io.to(partnerId).emit('partner_left');
         activePairs.delete(partnerId);
         activePairs.delete(socket.id);
+        // Remember who just unpaired so we don't immediately rematch them.
+        const now = Date.now();
+        lastPartner.set(socket.id, partnerId);
+        lastPartner.set(partnerId, socket.id);
+        lastPartnerAt.set(socket.id, now);
+        lastPartnerAt.set(partnerId, now);
     }
 }
 

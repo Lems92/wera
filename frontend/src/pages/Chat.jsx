@@ -1,20 +1,18 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import Peer from 'peerjs';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { API_URL, SOCKET_URL } from '../config';
-import { useMediaQuery } from '../hooks/useMediaQuery';
 import AdSlot from '../components/AdSlot';
+import './Chat.css';
 
 // const SOCKET_URL = 'http://localhost:3001'; // Removed
 
 export default function Chat() {
     const { user, token } = useAuth();
     const navigate = useNavigate();
-    const isNarrow = useMediaQuery('(max-width: 900px)');
-    const isMobile = useMediaQuery('(max-width: 600px)');
 
     const [status, setStatus] = useState('idle');
     // idle | waiting | connected | ended
@@ -196,7 +194,7 @@ export default function Chat() {
             if (localVideo.current) localVideo.current.srcObject = stream;
             // If "Démarrer" was clicked before camera was ready, start search now.
             maybeStartSearch();
-        } catch (err) {
+        } catch {
             alert('Impossible d\'accéder à la caméra/micro. Autorise l\'accès dans ton navigateur.');
         }
     };
@@ -291,281 +289,182 @@ export default function Chat() {
         peerRef.current?.destroy();
     };
 
-    // ── Styles ──────────────────────────────────────────────
-    const s = {
-        page: {
-            display: 'grid',
-            gridTemplateColumns: isNarrow ? '1fr' : '1fr 320px',
-            gridTemplateRows: isNarrow ? '55dvh auto' : undefined,
-            minHeight: 'calc(100dvh - 57px)',
-            height: isNarrow ? 'auto' : 'calc(100dvh - 57px)',
-            background: '#111',
-            overflow: 'hidden'
-        },
-        videoSection: {
-            display: 'flex', flexDirection: 'column',
-            position: 'relative', background: '#000',
-            minHeight: isNarrow ? '55dvh' : undefined
-        },
-        remoteStage: {
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: isMobile ? '10px' : '16px',
-            overflow: 'hidden'
-        },
-        remoteFrame: {
-            width: '100%',
-            height: 'auto',
-            maxWidth: isNarrow ? '100%' : 'min(640px, 100%)',
-            maxHeight: '100%',
-            aspectRatio: '1 / 1',
-            borderRadius: isMobile ? '14px' : '18px',
-            background: '#1a1a1a',
-            overflow: 'hidden',
-            position: 'relative'
-        },
-        remoteVideo: {
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            background: '#1a1a1a',
-            display: 'block',
-            transform: 'scaleX(1)'
-        },
-        localVideo: {
-            position: 'absolute',
-            bottom: isMobile ? '72px' : '80px',
-            right: isMobile ? '12px' : '16px',
-            width: isMobile ? '120px' : (isNarrow ? '140px' : '160px'),
-            height: isMobile ? '90px' : (isNarrow ? '105px' : '120px'),
-            objectFit: 'cover', borderRadius: '12px',
-            border: '2px solid #FFE000', background: '#222',
-            zIndex: 10,
-            transform: 'scaleX(-1)'
-        },
-        controls: {
-            height: isMobile ? 'auto' : '64px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            gap: '12px', background: '#1a1a1a',
-            padding: isMobile ? '10px 12px' : 0,
-            flexWrap: isMobile ? 'wrap' : 'nowrap'
-        },
-        adInVideo: {
-            padding: isMobile ? '10px 12px' : '12px 16px',
-            background: '#101010',
-            borderTop: '1px solid #1f1f1f'
-        },
-        btn: (color) => ({
-            padding: '10px 22px', borderRadius: '24px', border: 'none',
-            cursor: 'pointer', fontWeight: '600', fontSize: '14px',
-            background: color, color: color === '#FFE000' ? '#111' : '#fff',
-            transition: 'opacity 0.2s'
-        }),
-        iconBtn: (active) => ({
-            width: '44px', height: '44px', borderRadius: '50%', border: 'none',
-            cursor: 'pointer', fontSize: '18px',
-            background: active ? '#333' : '#e00',
-            transition: 'background 0.2s'
-        }),
-        overlay: {
-            position: 'absolute', inset: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexDirection: 'column', gap: '1rem',
-            background: '#111', zIndex: 5
-        },
-        chatSection: {
-            display: 'flex', flexDirection: 'column',
-            background: '#fff',
-            borderLeft: isNarrow ? 'none' : '1px solid #e5e5e5',
-            borderTop: isNarrow ? '1px solid #e5e5e5' : 'none',
-            minHeight: isNarrow ? '45dvh' : undefined
-        },
-        chatHeader: {
-            padding: '1rem', borderBottom: '1px solid #e5e5e5',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-        },
-        chatAdWrap: {
-            padding: '12px 12px 0',
-            background: '#fff'
-        },
-        messages: {
-            flex: 1, overflowY: 'auto',
-            padding: '1rem', display: 'flex',
-            flexDirection: 'column', gap: '8px'
-        },
-        bubble: (self) => ({
-            maxWidth: isMobile ? '92%' : '80%',
-            padding: '8px 12px', borderRadius: '12px',
-            fontSize: '14px', lineHeight: 1.4,
-            alignSelf: self ? 'flex-end' : 'flex-start',
-            background: self ? '#FFE000' : '#f0f0f0',
-            color: '#111'
-        }),
-        chatInput: {
-            display: 'flex', padding: '0.75rem',
-            borderTop: '1px solid #e5e5e5', gap: '8px',
-            position: isNarrow ? 'sticky' : 'static',
-            bottom: 0,
-            background: '#fff'
+    const leaveChat = () => {
+        stop();
+        navigate('/');
+    };
+
+    const statusLine = () => {
+        if (status === 'waiting') {
+            return waitingTooLong
+                ? "Il n'y a personne pour le moment, recherche en cours…"
+                : "Recherche d'un partenaire…";
         }
+        if (status === 'connected') return `Connecté avec ${partnerName}`;
+        if (status === 'ended') return 'La conversation est terminée';
+        return 'Démarrez une conversation depuis l’écran vidéo ci-dessus.';
+    };
+
+    const statusSub = () => {
+        if (status === 'connected') return 'En ligne';
+        if (status === 'waiting') return 'Patience…';
+        if (status === 'ended') return 'Tu peux lancer une nouvelle recherche';
+        return 'Pas connecté';
     };
 
     return (
-        <div style={s.page}>
-
-            {/* ── Section vidéo ── */}
-            <div style={s.videoSection}>
-
-                {/* Overlay état */}
+        <div className="chat-page">
+            <div className="video-grid-container">
                 {status === 'idle' && (
-                    <div style={s.overlay}>
+                    <div className="state-overlay">
                         <div style={{ fontSize: '48px' }}>🇲🇬</div>
-                        <h2 style={{ color: '#fff', fontSize: '22px' }}>Prêt à rencontrer des Malagasy ?</h2>
-                        <p style={{ color: '#aaa', fontSize: '14px' }}>Clique sur Démarrer pour trouver un partenaire</p>
-                        <button style={s.btn('#FFE000')} onClick={findPartner}>
+                        <h2>Prêt à rencontrer des Malagasy ?</h2>
+                        <p>Clique sur Démarrer pour trouver un partenaire</p>
+                        <button type="button" className="overlay-btn overlay-btn--primary" onClick={findPartner}>
                             Démarrer
                         </button>
                     </div>
                 )}
 
                 {status === 'waiting' && (
-                    <div style={s.overlay}>
-                        <div style={{ fontSize: '40px', animation: 'spin 1s linear infinite' }}>⏳</div>
-                        <h2 style={{ color: '#fff' }}>Recherche en cours...</h2>
-                        <p style={{ color: '#aaa', fontSize: '14px', textAlign: 'center', padding: '0 20px' }}>
-                            {waitingTooLong 
-                                ? "Il n'y a personne pour le moment, mais on continue de chercher... 🇲🇬" 
+                    <div className="state-overlay">
+                        <div style={{ fontSize: '40px' }}>⏳</div>
+                        <h2>Recherche en cours…</h2>
+                        <p>
+                            {waitingTooLong
+                                ? "Il n'y a personne pour le moment, mais on continue de chercher… 🇲🇬"
                                 : "En attente d'un autre utilisateur"}
                         </p>
-                        <button style={s.btn('#555')} onClick={stop}>Annuler</button>
+                        <button type="button" className="overlay-btn overlay-btn--muted" onClick={stop}>
+                            Annuler
+                        </button>
                     </div>
                 )}
 
                 {status === 'ended' && (
-                    <div style={s.overlay}>
+                    <div className="state-overlay">
                         <div style={{ fontSize: '40px' }}>👋</div>
-                        <h2 style={{ color: '#fff' }}>La conversation est terminée</h2>
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                            <button style={s.btn('#FFE000')} onClick={findPartner}>Nouveau</button>
-                            <button style={s.btn('#333')} onClick={stop}>Arrêter</button>
+                        <h2>La conversation est terminée</h2>
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                            <button type="button" className="overlay-btn overlay-btn--primary" onClick={findPartner}>
+                                Nouveau
+                            </button>
+                            <button type="button" className="overlay-btn overlay-btn--muted" onClick={stop}>
+                                Arrêter
+                            </button>
                         </div>
                     </div>
                 )}
 
-                {/* Vidéo distante (forcée en carré) */}
-                <div style={s.remoteStage}>
-                    <div style={s.remoteFrame}>
-                        <video ref={remoteVideo} autoPlay playsInline style={s.remoteVideo} />
+                {/* Autre utilisateur — gauche */}
+                <div className="video-cell">
+                    <video ref={remoteVideo} autoPlay playsInline />
+                    <button type="button" className="close-video" onClick={leaveChat} aria-label="Quitter">
+                        ✕
+                    </button>
+                    <div className="audio-bar" aria-hidden>
+                        <div className="audio-level" />
                     </div>
                 </div>
 
-                {/* Vidéo locale (petite) */}
-                <video ref={localVideo} autoPlay playsInline muted style={s.localVideo} />
-
-                {/* Contrôles */}
-                <div style={s.controls}>
-                    <button style={s.iconBtn(!isMuted)} onClick={toggleMute} title="Micro">
-                        {isMuted ? '🔇' : '🎤'}
-                    </button>
-                    <button style={s.iconBtn(!isCamOff)} onClick={toggleCam} title="Caméra">
-                        {isCamOff ? '📵' : '📷'}
-                    </button>
-                    {status === 'connected' && (
-                        <>
-                            <button style={s.btn('#FFE000')} onClick={skip}>⏭ Suivant</button>
-                            <button style={s.btn('#e00')} onClick={stop}>✖ Stop</button>
-                        </>
-                    )}
+                {/* Moi — droite */}
+                <div className="video-cell">
+                    <video
+                        ref={localVideo}
+                        autoPlay
+                        playsInline
+                        muted
+                        style={{ transform: 'scaleX(-1)' }}
+                    />
                 </div>
-
-                {/* Espace pub (desktop/tablette) */}
-                {!isMobile && (
-                    <div style={s.adInVideo}>
-                        <AdSlot placement="video" minHeight={90} />
-                    </div>
-                )}
             </div>
 
-            {/* ── Section chat texte ── */}
-            <div style={s.chatSection}>
-                <div style={s.chatHeader}>
-                    <div>
-                        <p style={{ fontWeight: '600', fontSize: '15px' }}>
-                            {status === 'connected' ? `💬 ${partnerName}` : 'Chat'}
-                        </p>
-                        <p style={{ fontSize: '12px', color: '#888' }}>
-                            {status === 'connected' ? 'En ligne' : 'Pas connecté'}
-                        </p>
+            <div className="controls-row">
+                <button
+                    type="button"
+                    className="btn-main btn-next"
+                    disabled={status !== 'connected'}
+                    onClick={skip}
+                >
+                    Next
+                </button>
+                <button type="button" className="btn-main btn-stop" onClick={stop}>
+                    Stop
+                </button>
+                <button
+                    type="button"
+                    className={`small-btn${isMuted ? ' small-btn--off' : ''}`}
+                    onClick={toggleMute}
+                    title="Micro"
+                    aria-label="Micro"
+                >
+                    {isMuted ? '🔇' : '🎤'}
+                </button>
+                <button
+                    type="button"
+                    className={`small-btn${isCamOff ? ' small-btn--off' : ''}`}
+                    onClick={toggleCam}
+                    title="Caméra"
+                    aria-label="Caméra"
+                >
+                    {isCamOff ? '📵' : '📷'}
+                </button>
+            </div>
+
+            <div className="chat-panel">
+                <div className="chat-status">
+                    <div className="chat-status-main">
+                        <p className="chat-status-title">{statusLine()}</p>
+                        <p className="chat-status-sub">{statusSub()}</p>
                     </div>
                     {status === 'connected' && (
-                        <button
-                            onClick={reportUser}
-                            style={{
-                                background: 'none', border: '1px solid #e00',
-                                color: '#e00', borderRadius: '8px',
-                                padding: '4px 10px', fontSize: '12px', cursor: 'pointer'
-                            }}
-                        >
-                            🚩 Signaler
+                        <button type="button" className="report-link" onClick={reportUser}>
+                            Signaler
                         </button>
                     )}
                 </div>
 
-                {/* Espace pub (dans le chat) */}
-                <div style={s.chatAdWrap}>
-                    <AdSlot placement="chat" minHeight={72} />
-                </div>
-
-                <div style={s.messages}>
+                <div className="chat-messages">
                     {messages.length === 0 && (
-                        <p style={{ color: '#ccc', fontSize: '13px', textAlign: 'center', marginTop: '2rem' }}>
+                        <p className="chat-empty">
                             {status === 'connected'
                                 ? 'Dis bonjour ! 👋'
                                 : 'Les messages apparaîtront ici'}
                         </p>
                     )}
                     {messages.map((msg, i) => (
-                        <div key={i} style={{ alignSelf: msg.self ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
-                            {!msg.self && (
-                                <p style={{ fontSize: '11px', color: '#888', marginBottom: '2px' }}>{msg.from}</p>
-                            )}
-                            <div style={s.bubble(msg.self)}>{msg.text}</div>
-                            <p style={{
-                                fontSize: '11px', color: '#bbb', marginTop: '2px',
-                                textAlign: msg.self ? 'right' : 'left'
-                            }}>{msg.time}</p>
+                        <div
+                            key={i}
+                            className={`msg-row${msg.self ? ' msg-row--self' : ' msg-row--other'}`}
+                        >
+                            {!msg.self && <span className="msg-from">{msg.from}</span>}
+                            <div className={`msg-bubble${msg.self ? ' msg-bubble--self' : ' msg-bubble--other'}`}>
+                                {msg.text}
+                            </div>
+                            <span className="msg-time">{msg.time}</span>
                         </div>
                     ))}
                     <div ref={messagesEnd} />
                 </div>
 
-                <form onSubmit={sendMessage} style={s.chatInput}>
+                <form onSubmit={sendMessage} className="chat-input-row">
                     <input
                         value={inputMsg}
-                        onChange={e => setInputMsg(e.target.value)}
-                        placeholder={status === 'connected' ? 'Écrire un message...' : 'En attente...'}
+                        onChange={(e) => setInputMsg(e.target.value)}
+                        placeholder={status === 'connected' ? 'Écrire un message…' : 'En attente…'}
                         disabled={status !== 'connected'}
-                        style={{
-                            flex: 1, padding: '8px 12px', borderRadius: '20px',
-                            border: '1px solid #ddd', fontSize: '14px', outline: 'none'
-                        }}
                     />
-                    <button
-                        type="submit"
-                        disabled={status !== 'connected'}
-                        style={{
-                            background: '#FFE000', border: 'none', borderRadius: '20px',
-                            padding: '8px 16px', cursor: 'pointer',
-                            fontWeight: '600', fontSize: '14px', color: '#111'
-                        }}
-                    >
-                        ➤
+                    <button type="submit" disabled={status !== 'connected'}>
+                        Envoyer
                     </button>
                 </form>
             </div>
 
+            <div className="chat-ads">
+                <AdSlot placement="video" minHeight={90} />
+                <div style={{ height: 8 }} />
+                <AdSlot placement="chat" minHeight={72} />
+            </div>
         </div>
     );
 }

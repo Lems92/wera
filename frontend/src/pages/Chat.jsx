@@ -289,11 +289,6 @@ export default function Chat() {
         peerRef.current?.destroy();
     };
 
-    const leaveChat = () => {
-        stop();
-        navigate('/');
-    };
-
     const statusLine = () => {
         if (status === 'waiting') {
             return waitingTooLong
@@ -359,12 +354,6 @@ export default function Chat() {
                 {/* Autre utilisateur — gauche */}
                 <div className="video-cell">
                     <video ref={remoteVideo} autoPlay playsInline />
-                    <button type="button" className="close-video" onClick={leaveChat} aria-label="Quitter">
-                        ✕
-                    </button>
-                    <div className="audio-bar" aria-hidden>
-                        <div className="audio-level" />
-                    </div>
                 </div>
 
                 {/* Moi — droite */}

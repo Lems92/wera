@@ -80,8 +80,8 @@ export default function Chat() {
     const initSocket = () => {
         socketRef.current = io(SOCKET_URL, {
             path: '/socket.io',
-            // Prefer websocket, but allow polling fallback (some networks block websockets).
-            transports: ['websocket', 'polling'],
+            // Start with polling (most proxy/network compatible), then upgrade to websocket if possible.
+            transports: ['polling', 'websocket'],
             withCredentials: true,
             reconnection: true,
             reconnectionAttempts: 10,

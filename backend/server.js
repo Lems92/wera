@@ -113,14 +113,15 @@ const corsOptions = {
 
 const io = new Server(server, {
     cors: corsOptions,
-    // Prefer websocket first; polling kept as a fallback for restrictive networks.
-    // Polling-first caused session-loss on upgrade behind Render's proxy (400 on sid).
-    transports: ['websocket', 'polling'],
+    // Polling first lets clients survive Render free-tier cold-starts (30-60s)
+    // where WebSocket would time out. Upgrades to websocket once the handshake
+    // completes and the server is warm.
+    transports: ['polling', 'websocket'],
     pingTimeout: 60000,
     pingInterval: 25000,
     allowEIO3: true,
-    // Recover sessions across brief disconnects (helps when Render's free tier
-    // briefly drops connections, avoiding "Session ID unknown" 400 errors).
+    // Recover sessions across brief disconnects — avoids "Session ID unknown" 400
+    // errors when Render briefly drops or restarts the connection mid-handshake.
     connectionStateRecovery: {
         maxDisconnectionDuration: 2 * 60 * 1000,
         skipMiddlewares: true

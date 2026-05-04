@@ -113,10 +113,18 @@ const corsOptions = {
 
 const io = new Server(server, {
     cors: corsOptions,
-    transports: ['polling', 'websocket'],
+    // Prefer websocket first; polling kept as a fallback for restrictive networks.
+    // Polling-first caused session-loss on upgrade behind Render's proxy (400 on sid).
+    transports: ['websocket', 'polling'],
     pingTimeout: 60000,
     pingInterval: 25000,
-    allowEIO3: true
+    allowEIO3: true,
+    // Recover sessions across brief disconnects (helps when Render's free tier
+    // briefly drops connections, avoiding "Session ID unknown" 400 errors).
+    connectionStateRecovery: {
+        maxDisconnectionDuration: 2 * 60 * 1000,
+        skipMiddlewares: true
+    }
 });
 
 // PeerJS signaling server (used by peerjs in the frontend)

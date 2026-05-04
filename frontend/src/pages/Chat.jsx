@@ -81,9 +81,13 @@ export default function Chat() {
 
     const initSocket = () => {
         socketRef.current = io(SOCKET_URL, {
-            // Start with polling for better reliability, then upgrade to websocket.
-            transports: ['polling', 'websocket'],
-            withCredentials: true,
+            // Prefer websocket first on Render — polling sessions get lost on upgrade,
+            // causing 400 Bad Request on subsequent polls with a valid sid.
+            // Polling kept as fallback for restrictive networks.
+            transports: ['websocket', 'polling'],
+            // Auth uses Bearer tokens, not cookies, so credentials are not needed.
+            // Removing this avoids strict CORS preflight failures on Render.
+            withCredentials: false,
             reconnection: true,
             reconnectionAttempts: 10,
             reconnectionDelay: 500,

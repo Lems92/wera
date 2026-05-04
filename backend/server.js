@@ -63,11 +63,23 @@ function parseAllowedOrigins() {
 }
 
 const ALLOWED_ORIGINS = parseAllowedOrigins();
+const HAS_EXPLICIT_ALLOWED_ORIGINS = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || '').trim().length > 0;
 
 function isOriginAllowed(origin) {
     if (!origin) return true; // non-browser requests (no Origin header)
     if (ALLOWED_ORIGINS.includes('*')) return true;
     if (ALLOWED_ORIGINS.includes(origin)) return true;
+
+    // If you didn't configure FRONTEND_URL(S) on Render, avoid mysterious 400s from Socket.IO/CORS.
+    // Accept any HTTPS origin in that case (you can lock it down by setting FRONTEND_URLS).
+    if (IS_RENDER && !HAS_EXPLICIT_ALLOWED_ORIGINS) {
+        try {
+            const { protocol } = new URL(origin);
+            return protocol === 'https:';
+        } catch {
+            return false;
+        }
+    }
 
     // Production-friendly allowlist for common hosted frontends when env isn't set.
     // (Keeps local dev strict while preventing "mystery 400" Socket.IO handshakes on Render.)

@@ -1,0 +1,96 @@
+/* Scoped to the landing page to avoid global clashes */
+.wera-landing {
+  min-height: 100vh;
+}
+
+.wera-landing .hero {
+  display: flex;
+  height: 100vh;
+}
+
+.wera-landing .left {
+  width: 50%;
+  background: #F4E74C;
+  padding: 140px 100px;
+  position: relative;
+}
+
+.wera-landing .subtitle {
+  font-family: 'Baloo 2', cursive;
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+.wera-landing .arrow {
+  width: 180px;
+  margin-bottom: 40px;
+}
+
+.wera-landing .title {
+  font-family: 'Baloo 2', cursive;
+  font-size: 82px;
+  line-height: 1.05;
+  font-weight: 800;
+}
+
+.wera-landing .right {
+  width: 50%;
+  position: relative;
+}
+
+.wera-landing .right img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wera-landing .video-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  width: 100px;
+  height: 100px;
+  background: #000;
+  border-radius: 50%;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  z-index: 5;
+  border: none;
+  cursor: pointer;
+}
+
+.wera-landing .video-btn svg {
+  width: 40px;
+  height: 40px;
+  fill: #F4E74C;
+}
+
+@media (max-width: 900px) {
+  .wera-landing .hero {
+    flex-direction: column;
+  }
+
+  .wera-landing .left,
+  .wera-landing .right {
+    width: 100%;
+    height: 50vh;
+  }
+
+  .wera-landing .left {
+    padding: 80px 28px;
+  }
+
+  .wera-landing .title {
+    font-size: 48px;
+  }
+
+  .wera-landing .subtitle {
+    font-size: 32px;
+  }
+}
+

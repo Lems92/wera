@@ -79,11 +79,9 @@ export default function Chat() {
 
     const initSocket = () => {
         socketRef.current = io(SOCKET_URL, {
-            // Render/proxies sometimes break Engine.IO long-polling (400 on GET/POST).
-            // Prefer WebSocket directly in production to avoid sid desync / polling blocks.
             path: '/socket.io',
-            transports: ['websocket'],
-            upgrade: false,
+            // Prefer websocket, but allow polling fallback (some networks block websockets).
+            transports: ['websocket', 'polling'],
             withCredentials: true,
             reconnection: true,
             reconnectionAttempts: 10,

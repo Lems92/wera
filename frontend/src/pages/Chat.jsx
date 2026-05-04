@@ -99,9 +99,13 @@ export default function Chat() {
             console.error('Socket connect_error:', err?.message || err);
         });
 
-        socketRef.current.on('waiting', () => setStatus('waiting'));
+        socketRef.current.on('waiting', () => {
+            // Avoid showing "Recherche..." if we are already in a call.
+            if (statusRef.current !== 'connected') setStatus('waiting');
+        });
 
         socketRef.current.on('partner_found', ({ partnerPeerId, partnerUsername, initiator }) => {
+            pendingFindRef.current = false;
             setPartnerName(partnerUsername);
             setStatus('connected');
             setMessages([]);
@@ -127,6 +131,11 @@ export default function Chat() {
     const maybeStartSearch = (force = false) => {
         const socket = socketRef.current;
         const u = userRef.current;
+        // Never start matchmaking while we're already connected.
+        if (statusRef.current === 'connected') {
+            pendingFindRef.current = false;
+            return;
+        }
         if (!force && !pendingFindRef.current) return;
         if (!u?.username) return;
         if (!localStream.current) return;
@@ -233,6 +242,7 @@ export default function Chat() {
 
     const stop = () => {
         currentCall.current?.close();
+        pendingFindRef.current = false;
         if (status === 'waiting') {
             socketRef.current.emit('cancel_search');
         } else {

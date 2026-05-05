@@ -209,6 +209,8 @@ export default function Chat() {
         statusRef.current = 'waiting';
         setStatus('waiting');
         maybeStartSearch();
+        // If peer/socket aren't ready yet, UI still shows "Recherche..." and auto-starts when ready.
+        setStatus('waiting');
     };
 
     const skip = () => {

@@ -464,3 +464,9 @@
         background: #000;
     }
 }
+
+@media (max-width: 520px) {
+  .chat-ads {
+    padding: 10px;
+  }
+}

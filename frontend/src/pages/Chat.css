@@ -1,318 +1,466 @@
-/* Layout aligné sur la maquette Wera Chat (Inter déjà chargée dans index.html) */
-.chat-page {
-  font-family: 'Inter', sans-serif;
-  background: #e9e9e9;
-  min-height: calc(100dvh - 57px);
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+/* ──────────────────────────────────────────────────────────
+   Wera Chat — OmeTV / Azar style mobile-first
+   ────────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --wera-yellow: #F4E74C;
+    --wera-yellow-soft: #FFE000;
+    --wera-bg: #050507;
+    --wera-bg-soft: #0d0d11;
+    --wera-text: #fafafa;
+    --wera-text-dim: #a0a0a8;
+    --wera-danger: #ff4d4f;
+    --wera-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+    --wera-radius: 18px;
 }
 
-.chat-page *,
-.chat-page *::before,
-.chat-page *::after {
-  box-sizing: border-box;
+/* ── Page ───────────────────────────────────────────────── */
+.ome-page {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    background: var(--wera-bg);
+    color: var(--wera-text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.video-grid-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  height: 80vh;
-  min-height: 280px;
-  max-height: 80vh;
-  position: relative;
-  flex-shrink: 0;
-}
-
-@media (max-width: 900px) {
-  .video-grid-container {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr 1fr;
-    height: 80vh;
-    max-height: 80vh;
-    min-height: 280px;
-  }
-
-  .video-cell {
+/* ── Vidéos ─────────────────────────────────────────────── */
+.ome-remote,
+.ome-local {
+    position: relative;
+    flex: 1 1 0;
     min-height: 0;
-  }
+    overflow: hidden;
+    background: #000;
 }
 
-.video-cell {
-  background: #000;
-  position: relative;
-  overflow: hidden;
-  min-height: 0;
+.ome-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    background: #0a0a0a;
 }
 
-.video-cell video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+.ome-video--mirrored {
+    transform: scaleX(-1);
 }
 
-.state-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 1rem;
-  background: rgba(17, 17, 17, 0.92);
-  z-index: 20;
-  padding: 1.5rem;
-  text-align: center;
+/* Ligne de séparation jaune */
+.ome-divider {
+    height: 2px;
+    background: var(--wera-yellow);
+    box-shadow: 0 0 8px rgba(244, 231, 76, 0.4);
+    flex-shrink: 0;
 }
 
-.state-overlay h2 {
-  color: #fff;
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 0;
+/* ── Tags "Stranger" / "You" ────────────────────────────── */
+.ome-tag {
+    position: absolute;
+    left: 14px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    color: var(--wera-text);
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: 5;
+    pointer-events: none;
 }
 
-.state-overlay p {
-  color: #aaa;
-  font-size: 14px;
-  margin: 0;
-  max-width: 320px;
+.ome-tag--top { top: 14px; }
+.ome-tag--bottom { bottom: 14px; }
+
+/* ── Badge "Connexion…" overlay ─────────────────────────── */
+.ome-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    color: var(--wera-text);
+    font-size: 15px;
+    font-weight: 500;
+    z-index: 4;
 }
 
-.overlay-btn {
-  padding: 12px 24px;
-  border-radius: 12px;
-  border: none;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  font-family: inherit;
+.ome-overlay__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--wera-yellow);
+    animation: ome-pulse 1.2s ease-in-out infinite;
+    box-shadow: 0 0 12px var(--wera-yellow);
 }
 
-.overlay-btn--primary {
-  background: #f4e74c;
-  color: #111;
+@keyframes ome-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50%      { transform: scale(1.5); opacity: 0.4; }
 }
 
-.overlay-btn--muted {
-  background: #555;
-  color: #fff;
+.ome-camoff {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.85);
+    color: var(--wera-text-dim);
+    font-size: 14px;
+    z-index: 4;
 }
 
-.controls-row {
-  display: flex;
-  gap: 15px;
-  padding: 15px;
-  flex-shrink: 0;
+/* Bouton "Signaler" */
+.ome-report {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    z-index: 5;
+    transition: transform 0.15s, background 0.15s;
 }
 
-.btn-main {
-  flex: 1;
-  padding: 20px;
-  border-radius: 12px;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  font-family: inherit;
-  font-weight: 600;
+.ome-report:active {
+    transform: scale(0.92);
+    background: rgba(255, 77, 79, 0.6);
 }
 
-.btn-main:disabled {
-  cursor: not-allowed;
-  opacity: 0.85;
+/* ── Contrôles (overlay flottant en bas centré) ─────────── */
+.ome-controls {
+    position: absolute;
+    left: 50%;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: rgba(15, 15, 18, 0.78);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 999px;
+    box-shadow: var(--wera-shadow);
+    z-index: 20;
 }
 
-.btn-next {
-  background: #b7d1c3;
-  color: #fff;
+.ome-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    transition: transform 0.12s ease, background 0.15s ease, box-shadow 0.15s ease;
+    color: var(--wera-text);
 }
 
-.btn-next:not(:disabled) {
-  background: #6ba888;
-  color: #fff;
+.ome-btn:active {
+    transform: scale(0.92);
 }
 
-.btn-next:not(:disabled):hover {
-  filter: brightness(1.05);
+.ome-btn--icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.10);
+    font-size: 20px;
 }
 
-.btn-stop {
-  background: #ff7a4d;
-  color: #fff;
+.ome-btn--icon.is-off {
+    background: var(--wera-danger);
 }
 
-.btn-stop:hover {
-  filter: brightness(1.05);
+.ome-btn--next {
+    height: 52px;
+    padding: 0 26px;
+    border-radius: 999px;
+    background: var(--wera-yellow);
+    color: #111;
+    font-size: 15px;
+    letter-spacing: 0.3px;
+    box-shadow: 0 6px 18px rgba(244, 231, 76, 0.35);
 }
 
-.small-btn {
-  padding: 15px;
-  background: #ddd;
-  border-radius: 12px;
-  text-align: center;
-  flex: 1;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  font-family: inherit;
-  line-height: 1;
+.ome-btn--next:active {
+    box-shadow: 0 2px 10px rgba(244, 231, 76, 0.25);
 }
 
-.small-btn:hover {
-  background: #cfcfcf;
+.ome-btn--stop {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--wera-danger);
+    color: #fff;
+    font-size: 18px;
+    box-shadow: 0 4px 14px rgba(255, 77, 79, 0.35);
 }
 
-.small-btn--off {
-  background: #c44;
-  color: #fff;
+/* ── FAB Chat ───────────────────────────────────────────── */
+.ome-fab {
+    position: absolute;
+    right: 16px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(15, 15, 18, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    color: var(--wera-text);
+    font-size: 22px;
+    cursor: pointer;
+    z-index: 20;
+    box-shadow: var(--wera-shadow);
+    transition: transform 0.15s;
 }
 
-.small-btn--off:hover {
-  background: #b33;
+.ome-fab:active {
+    transform: scale(0.92);
 }
 
-.chat-panel {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 200px;
-  background: #f5f5f5;
-  border-top: 1px solid #ddd;
+.ome-fab__badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--wera-danger);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 2px var(--wera-bg);
 }
 
-.chat-status {
-  padding: 15px;
-  font-size: 14px;
-  color: #666;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px solid #e8e8e8;
+/* ── Chat panel (slide-up) ──────────────────────────────── */
+.ome-chat {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 55%;
+    background: var(--wera-bg-soft);
+    color: var(--wera-text);
+    border-top-left-radius: 22px;
+    border-top-right-radius: 22px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 -16px 40px rgba(0, 0, 0, 0.55);
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.32s cubic-bezier(0.22, 0.9, 0.32, 1.1);
+    z-index: 30;
 }
 
-.chat-status-main {
-  flex: 1;
+.ome-chat.is-open {
+    transform: translateY(0);
 }
 
-.chat-status-title {
-  font-weight: 600;
-  color: #333;
-  margin: 0 0 4px;
-  font-size: 15px;
+.ome-chat__handle {
+    padding: 8px 0 4px;
+    display: flex;
+    justify-content: center;
+    cursor: pointer;
 }
 
-.chat-status-sub {
-  margin: 0;
-  font-size: 12px;
-  color: #888;
+.ome-chat__grip {
+    width: 44px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
 }
 
-.report-link {
-  background: none;
-  border: 1px solid #e00;
-  color: #e00;
-  border-radius: 8px;
-  padding: 4px 10px;
-  font-size: 12px;
-  cursor: pointer;
-  font-family: inherit;
-  flex-shrink: 0;
+.ome-chat__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 18px 12px;
+    font-size: 14px;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.chat-messages {
-  flex: 1;
-  padding: 15px;
-  overflow-y: auto;
+.ome-chat__close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--wera-text);
+    font-size: 14px;
+    cursor: pointer;
 }
 
-.chat-empty {
-  color: #aaa;
-  font-size: 13px;
-  text-align: center;
-  margin-top: 2rem;
+.ome-chat__close:active {
+    transform: scale(0.92);
 }
 
-.msg-row {
-  display: flex;
-  flex-direction: column;
-  max-width: 85%;
-  margin-bottom: 10px;
+.ome-chat__messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 14px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    scrollbar-width: thin;
 }
 
-.msg-row--self {
-  align-self: flex-end;
-  align-items: flex-end;
+.ome-chat__messages::-webkit-scrollbar { width: 4px; }
+.ome-chat__messages::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
 }
 
-.msg-row--other {
-  align-self: flex-start;
-  align-items: flex-start;
+.ome-chat__empty {
+    color: var(--wera-text-dim);
+    font-size: 13px;
+    text-align: center;
+    margin: auto 0;
 }
 
-.msg-from {
-  font-size: 11px;
-  color: #888;
-  margin-bottom: 2px;
+/* Messages */
+.ome-msg {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    max-width: 78%;
 }
 
-.msg-bubble {
-  padding: 8px 12px;
-  border-radius: 12px;
-  font-size: 14px;
-  line-height: 1.4;
+.ome-msg--self {
+    align-self: flex-end;
+    align-items: flex-end;
 }
 
-.msg-bubble--self {
-  background: #f4e74c;
-  color: #111;
+.ome-msg__from {
+    font-size: 11px;
+    color: var(--wera-text-dim);
+    margin-bottom: 2px;
+    padding: 0 4px;
 }
 
-.msg-bubble--other {
-  background: #e8e8e8;
-  color: #111;
+.ome-msg__bubble {
+    padding: 9px 13px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 14px;
+    line-height: 1.4;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
 }
 
-.msg-time {
-  font-size: 11px;
-  color: #bbb;
-  margin-top: 2px;
+.ome-msg--self .ome-msg__bubble {
+    background: var(--wera-yellow);
+    color: #111;
+    border-bottom-right-radius: 4px;
 }
 
-.chat-input-row {
-  display: flex;
-  border-top: 1px solid #ddd;
+.ome-msg:not(.ome-msg--self) .ome-msg__bubble {
+    border-bottom-left-radius: 4px;
 }
 
-.chat-input-row input {
-  flex: 1;
-  padding: 12px;
-  border: none;
-  outline: none;
-  font-family: inherit;
-  font-size: 14px;
-  background: #fff;
+.ome-msg__time {
+    font-size: 10px;
+    color: var(--wera-text-dim);
+    margin-top: 3px;
+    padding: 0 4px;
 }
 
-.chat-input-row button[type='submit'] {
-  padding: 12px 16px;
-  border: none;
-  background: #f4e74c;
-  font-weight: bold;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 14px;
+/* Chat input */
+.ome-chat__input {
+    display: flex;
+    gap: 8px;
+    padding: 10px 12px calc(env(safe-area-inset-bottom, 0px) + 12px);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--wera-bg-soft);
 }
 
-.chat-input-row button[type='submit']:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.ome-chat__input input {
+    flex: 1;
+    height: 42px;
+    padding: 0 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--wera-text);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
 }
 
-.chat-ads {
-  padding: 12px;
-  background: #ececec;
-  border-top: 1px solid #ddd;
+.ome-chat__input input:focus {
+    border-color: var(--wera-yellow);
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.ome-chat__input input:disabled {
+    opacity: 0.5;
+}
+
+.ome-chat__input button {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: none;
+    background: var(--wera-yellow);
+    color: #111;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.12s, opacity 0.12s;
+}
+
+.ome-chat__input button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.ome-chat__input button:not(:disabled):active {
+    transform: scale(0.92);
+}
+
+/* ── Tablet / desktop: limiter la largeur, garder mobile feel ── */
+@media (min-width: 720px) {
+    .ome-page {
+        max-width: 480px;
+        margin: 0 auto;
+        position: relative;
+        height: 100vh;
+        box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+    }
+    body {
+        background: #000;
+    }
 }

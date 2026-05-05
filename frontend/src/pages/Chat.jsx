@@ -362,13 +362,13 @@ export default function Chat() {
                     </div>
                 )}
 
-                {/* Autre utilisateur — gauche */}
-                <div className="video-cell">
+                {/* Autre utilisateur — haut (mobile) / gauche (desktop) */}
+                <div className="video-cell video-cell--remote">
                     <video ref={remoteVideo} autoPlay playsInline />
                 </div>
 
-                {/* Moi — droite */}
-                <div className="video-cell">
+                {/* Moi — bas (mobile) / droite (desktop) */}
+                <div className="video-cell video-cell--local">
                     <video
                         ref={localVideo}
                         autoPlay

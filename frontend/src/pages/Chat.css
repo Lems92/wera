@@ -6,6 +6,8 @@
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  height: calc(100dvh - 57px);
+  overflow: hidden;
 }
 
 .chat-page *,
@@ -17,9 +19,9 @@
 .video-grid-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  height: 80vh;
-  min-height: 280px;
-  max-height: 80vh;
+  height: clamp(260px, 46dvh, 560px);
+  min-height: 260px;
+  max-height: 70dvh;
   position: relative;
   flex-shrink: 0;
 }
@@ -28,14 +30,22 @@
   .video-grid-container {
     grid-template-columns: 1fr;
     grid-template-rows: 1fr 1fr;
-    height: 80vh;
-    max-height: 80vh;
-    min-height: 280px;
+    height: clamp(320px, 55dvh, 720px);
+    max-height: 78dvh;
+    min-height: 320px;
   }
 
   .video-cell {
     min-height: 0;
   }
+}
+
+.video-cell--remote {
+  order: 0;
+}
+
+.video-cell--local {
+  order: 1;
 }
 
 .video-cell {
@@ -105,6 +115,7 @@
   gap: 15px;
   padding: 15px;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 .btn-main {
@@ -180,6 +191,7 @@
   min-height: 200px;
   background: #f5f5f5;
   border-top: 1px solid #ddd;
+  min-height: 0;
 }
 
 .chat-status {
@@ -226,6 +238,7 @@
   flex: 1;
   padding: 15px;
   overflow-y: auto;
+  min-height: 0;
 }
 
 .chat-empty {
@@ -315,4 +328,5 @@
   padding: 12px;
   background: #ececec;
   border-top: 1px solid #ddd;
+  flex-shrink: 0;
 }

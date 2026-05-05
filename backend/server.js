@@ -113,10 +113,19 @@ const corsOptions = {
 
 const io = new Server(server, {
     cors: corsOptions,
+    // Polling first lets clients survive Render free-tier cold-starts (30-60s)
+    // where WebSocket would time out. Upgrades to websocket once the handshake
+    // completes and the server is warm.
     transports: ['polling', 'websocket'],
     pingTimeout: 60000,
     pingInterval: 25000,
-    allowEIO3: true
+    allowEIO3: true,
+    // Recover sessions across brief disconnects — avoids "Session ID unknown" 400
+    // errors when Render briefly drops or restarts the connection mid-handshake.
+    connectionStateRecovery: {
+        maxDisconnectionDuration: 2 * 60 * 1000,
+        skipMiddlewares: true
+    }
 });
 
 // PeerJS signaling server (used by peerjs in the frontend)
@@ -183,12 +192,26 @@ app.get('/api/check-location', async (req, res) => {
 // ─── Matchmaking ───────────────────────────────────────────
 const waitingQueue = [];          // file d'attente
 const activePairs = new Map();    // socketId -> socketId
+const lastPartner = new Map();    // socketId -> previous partnerId (for anti-immediate-rematch)
+const RECENT_PARTNER_WINDOW_MS = 30 * 1000; // avoid rematching the same person for 30s after a skip
+const lastPartnerAt = new Map();  // socketId -> timestamp when lastPartner was recorded
 
 function removeFromWaitingQueue(socket) {
     // Remove all occurrences (defensive against duplicates).
     for (let i = waitingQueue.length - 1; i >= 0; i--) {
         if (waitingQueue[i]?.id === socket.id) waitingQueue.splice(i, 1);
     }
+}
+
+function recentlyPaired(aId, bId) {
+    const now = Date.now();
+    const aPrev = lastPartner.get(aId);
+    const bPrev = lastPartner.get(bId);
+    const aTs = lastPartnerAt.get(aId) || 0;
+    const bTs = lastPartnerAt.get(bId) || 0;
+    if (aPrev === bId && now - aTs < RECENT_PARTNER_WINDOW_MS) return true;
+    if (bPrev === aId && now - bTs < RECENT_PARTNER_WINDOW_MS) return true;
+    return false;
 }
 
 io.on('connection', (socket) => {
@@ -207,6 +230,7 @@ io.on('connection', (socket) => {
 
         // Si quelqu'un attend déjà → on les apparie
         let partner;
+        const recentSkipped = []; // valid candidates we deferred because of recent-pairing.
         while (waitingQueue.length > 0 && !partner) {
             const candidate = waitingQueue.shift();
             // Skip invalid / disconnected sockets or self-match.
@@ -214,8 +238,21 @@ io.on('connection', (socket) => {
             if (candidate.id === socket.id) continue;
             // Skip if candidate already paired (stale queue entry).
             if (activePairs.has(candidate.id)) continue;
+            // Defer recently-paired candidates so "Suivant" prefers someone new
+            // — but keep them as a fallback if no one else is available.
+            if (recentlyPaired(socket.id, candidate.id)) {
+                recentSkipped.push(candidate);
+                continue;
+            }
             partner = candidate;
         }
+        // Fallback: only the previous partner is online → reuse them rather than
+        // leaving the user stuck in "Recherche...".
+        if (!partner && recentSkipped.length) {
+            partner = recentSkipped.shift();
+        }
+        // Re-queue any remaining deferred candidates at the head of the queue.
+        if (recentSkipped.length) waitingQueue.unshift(...recentSkipped);
 
         if (partner) {
 
@@ -255,11 +292,11 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Passer au suivant
+    // Passer au suivant — the client immediately re-emits 'find_partner',
+    // so we don't send 'skipped' here (it would race the client into 'idle').
     socket.on('skip', () => {
         leaveCurrentPair(socket);
         removeFromWaitingQueue(socket);
-        socket.emit('skipped');
     });
 
     // Annuler la recherche (quand l'utilisateur stop pendant "Recherche en cours...")
@@ -272,6 +309,9 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         leaveCurrentPair(socket);
         removeFromWaitingQueue(socket);
+        // Clean up the anti-rematch trackers so we don't leak memory.
+        lastPartner.delete(socket.id);
+        lastPartnerAt.delete(socket.id);
         console.log('❌ Déconnecté:', socket.id);
     });
 });
@@ -282,6 +322,12 @@ function leaveCurrentPair(socket) {
         io.to(partnerId).emit('partner_left');
         activePairs.delete(partnerId);
         activePairs.delete(socket.id);
+        // Remember who just unpaired so we don't immediately rematch them.
+        const now = Date.now();
+        lastPartner.set(socket.id, partnerId);
+        lastPartner.set(partnerId, socket.id);
+        lastPartnerAt.set(socket.id, now);
+        lastPartnerAt.set(partnerId, now);
     }
 }
 

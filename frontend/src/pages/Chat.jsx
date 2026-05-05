@@ -79,14 +79,18 @@ export default function Chat() {
 
     const initSocket = () => {
         socketRef.current = io(SOCKET_URL, {
-            path: '/socket.io',
-            // Start with polling (most proxy/network compatible), then upgrade to websocket if possible.
+            // Polling first — survives Render free-tier cold-starts (30-60s wake-up)
+            // where WebSocket handshake would time out. Upgrades to websocket once warm.
             transports: ['polling', 'websocket'],
-            withCredentials: true,
+            // Auth uses Bearer tokens, not cookies, so credentials are not needed.
+            // withCredentials:true was causing strict CORS preflight failures on Render.
+            withCredentials: false,
             reconnection: true,
             reconnectionAttempts: 10,
-            reconnectionDelay: 500,
-            timeout: 30000
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            // Long enough to absorb a Render free-tier cold-start.
+            timeout: 60000
         });
 
         socketRef.current.on('connect', () => {
@@ -125,6 +129,9 @@ export default function Chat() {
         });
 
         socketRef.current.on('skipped', () => {
+            // Only fall back to idle if we're not actively searching for a new partner.
+            // After "Suivant", we want to stay in 'waiting' until partner_found arrives.
+            if (statusRef.current === 'waiting' || pendingFindRef.current) return;
             setStatus('idle');
         });
     };
@@ -229,14 +236,19 @@ export default function Chat() {
     const findPartner = () => {
         if (!localStream.current) return alert('Caméra non disponible');
         pendingFindRef.current = true;
-        maybeStartSearch();
-        // If peer/socket aren't ready yet, UI still shows "Recherche..." and auto-starts when ready.
+        // Update the ref synchronously BEFORE maybeStartSearch so its
+        // "if (statusRef.current === 'connected') bail" guard doesn't
+        // misfire on the stale 'connected' value during a skip.
+        statusRef.current = 'waiting';
         setStatus('waiting');
+        maybeStartSearch();
     };
 
     const skip = () => {
         currentCall.current?.close();
         if (remoteVideo.current) remoteVideo.current.srcObject = null;
+        setPartnerName('');
+        setMessages([]);
         socketRef.current.emit('skip');
         findPartner();
     };

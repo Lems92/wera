@@ -42,7 +42,7 @@ export default function Chat() {
 
     useEffect(() => {
         if (!user) navigate('/login');
-    }, [user]);
+    }, [user, navigate]);
 
     useEffect(() => {
         initSocket();

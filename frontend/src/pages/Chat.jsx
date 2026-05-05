@@ -98,6 +98,7 @@ export default function Chat() {
             setStatus('connected');
             setMessages([]);
             setUnread(0);
+            setChatOpen(false);
             connectVideo(partnerPeerId, initiator);
         });
 

@@ -451,17 +451,22 @@
     transform: scale(0.92);
 }
 
-/* ── Tablet / desktop: limiter la largeur, garder mobile feel ── */
-@media (min-width: 720px) {
+/* ── Desktop: côte à côte (remote | local) ───────────────── */
+@media (min-width: 900px) {
     .ome-page {
-        max-width: 480px;
-        margin: 0 auto;
-        position: relative;
-        height: 100vh;
-        box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+        flex-direction: row;
     }
-    body {
-        background: #000;
+
+    /* La séparation devient verticale */
+    .ome-divider {
+        width: 2px;
+        height: 100%;
+    }
+
+    .ome-remote,
+    .ome-local {
+        flex: 1 1 0;
+        min-width: 0;
     }
 }
 

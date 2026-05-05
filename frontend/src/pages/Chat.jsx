@@ -5,10 +5,7 @@ import Peer from 'peerjs';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { API_URL, SOCKET_URL } from '../config';
-import AdSlot from '../components/AdSlot';
 import './Chat.css';
-
-// const SOCKET_URL = 'http://localhost:3001'; // Removed
 
 export default function Chat() {
     const { user, token } = useAuth();
@@ -22,6 +19,8 @@ export default function Chat() {
     const [isMuted, setIsMuted] = useState(false);
     const [isCamOff, setIsCamOff] = useState(false);
     const [waitingTooLong, setWaitingTooLong] = useState(false);
+    const [chatOpen, setChatOpen] = useState(false);
+    const [unread, setUnread] = useState(0);
 
     const socketRef = useRef(null);
     const peerRef = useRef(null);
@@ -35,21 +34,16 @@ export default function Chat() {
     const userRef = useRef(null);
     const waitingTimerRef = useRef(null);
     const statusRef = useRef('idle');
+    const chatOpenRef = useRef(false);
 
-    useEffect(() => {
-        userRef.current = user;
-    }, [user]);
+    useEffect(() => { userRef.current = user; }, [user]);
+    useEffect(() => { statusRef.current = status; }, [status]);
+    useEffect(() => { chatOpenRef.current = chatOpen; }, [chatOpen]);
 
-    useEffect(() => {
-        statusRef.current = status;
-    }, [status]);
-
-    // Redirige si pas connecté
     useEffect(() => {
         if (!user) navigate('/login');
     }, [user]);
 
-    // Initialise socket + caméra au montage
     useEffect(() => {
         initSocket();
         startCamera();
@@ -57,17 +51,13 @@ export default function Chat() {
         return () => cleanup();
     }, []);
 
-    // Auto-scroll messages
     useEffect(() => {
         messagesEnd.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+    }, [messages, chatOpen]);
 
-    // Timer pour la notification après 2 minutes d'attente
     useEffect(() => {
         if (status === 'waiting') {
-            waitingTimerRef.current = setTimeout(() => {
-                setWaitingTooLong(true);
-            }, 120000); // 2 minutes
+            waitingTimerRef.current = setTimeout(() => setWaitingTooLong(true), 120000);
         } else {
             if (waitingTimerRef.current) clearTimeout(waitingTimerRef.current);
             setWaitingTooLong(false);
@@ -79,18 +69,16 @@ export default function Chat() {
 
     const initSocket = () => {
         socketRef.current = io(SOCKET_URL, {
-            path: '/socket.io',
-            // Start with polling (most proxy/network compatible), then upgrade to websocket if possible.
             transports: ['polling', 'websocket'],
-            withCredentials: true,
+            withCredentials: false,
             reconnection: true,
             reconnectionAttempts: 10,
-            reconnectionDelay: 500,
-            timeout: 30000
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            timeout: 60000
         });
 
         socketRef.current.on('connect', () => {
-            // If user was searching or clicked "Démarrer" while socket was connecting.
             if (statusRef.current === 'waiting' || pendingFindRef.current) {
                 maybeStartSearch(true);
             }
@@ -101,7 +89,6 @@ export default function Chat() {
         });
 
         socketRef.current.on('waiting', () => {
-            // Avoid showing "Recherche..." if we are already in a call.
             if (statusRef.current !== 'connected') setStatus('waiting');
         });
 
@@ -110,11 +97,13 @@ export default function Chat() {
             setPartnerName(partnerUsername);
             setStatus('connected');
             setMessages([]);
+            setUnread(0);
             connectVideo(partnerPeerId, initiator);
         });
 
         socketRef.current.on('receive_message', (msg) => {
             setMessages(prev => [...prev, { ...msg, self: false }]);
+            if (!chatOpenRef.current) setUnread(u => u + 1);
         });
 
         socketRef.current.on('partner_left', () => {
@@ -125,6 +114,7 @@ export default function Chat() {
         });
 
         socketRef.current.on('skipped', () => {
+            if (statusRef.current === 'waiting' || pendingFindRef.current) return;
             setStatus('idle');
         });
     };
@@ -132,7 +122,6 @@ export default function Chat() {
     const maybeStartSearch = (force = false) => {
         const socket = socketRef.current;
         const u = userRef.current;
-        // Never start matchmaking while we're already connected.
         if (statusRef.current === 'connected') {
             pendingFindRef.current = false;
             return;
@@ -152,16 +141,12 @@ export default function Chat() {
     };
 
     const initPeer = () => {
-        // Create a single Peer instance for the whole session.
-        // Multiple Peer() instances cause mismatched peerIds and failed calls.
         const peerServerUrl = new URL(SOCKET_URL);
-
         const peer = new Peer(undefined, {
             host: peerServerUrl.hostname,
             port: peerServerUrl.port ? Number(peerServerUrl.port) : (peerServerUrl.protocol === 'https:' ? 443 : 80),
             secure: peerServerUrl.protocol === 'https:',
             path: '/peerjs',
-            // Public STUN servers help with NAT traversal. TURN may still be needed for strict networks.
             config: {
                 iceServers: [
                     { urls: 'stun:stun.l.google.com:19302' },
@@ -169,7 +154,6 @@ export default function Chat() {
                 ]
             }
         });
-
         peerRef.current = peer;
 
         peer.on('open', (id) => {
@@ -178,7 +162,6 @@ export default function Chat() {
         });
 
         peer.on('call', (call) => {
-            // Always be ready to answer incoming calls.
             if (!localStream.current) return;
             currentCall.current = call;
             call.answer(localStream.current);
@@ -187,12 +170,8 @@ export default function Chat() {
             });
         });
 
-        peer.on('error', (err) => {
-            console.error('Peer error:', err);
-        });
-
+        peer.on('error', (err) => console.error('Peer error:', err));
         peer.on('disconnected', () => {
-            // Best-effort reconnect without changing peerIdRef unless a new open fires.
             try { peer.reconnect(); } catch { /* ignore */ }
         });
     };
@@ -202,7 +181,6 @@ export default function Chat() {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             localStream.current = stream;
             if (localVideo.current) localVideo.current.srcObject = stream;
-            // If "Démarrer" was clicked before camera was ready, start search now.
             maybeStartSearch();
         } catch {
             alert('Impossible d\'accéder à la caméra/micro. Autorise l\'accès dans ton navigateur.');
@@ -215,7 +193,6 @@ export default function Chat() {
         if (!localStream.current) return;
 
         if (initiator) {
-            // Close any previous call before starting a new one (e.g. after "Suivant").
             currentCall.current?.close();
             const call = peer.call(partnerPeerId, localStream.current);
             currentCall.current = call;
@@ -229,6 +206,8 @@ export default function Chat() {
     const findPartner = () => {
         if (!localStream.current) return alert('Caméra non disponible');
         pendingFindRef.current = true;
+        statusRef.current = 'waiting';
+        setStatus('waiting');
         maybeStartSearch();
         // If peer/socket aren't ready yet, UI still shows "Recherche..." and auto-starts when ready.
         setStatus('waiting');
@@ -237,6 +216,9 @@ export default function Chat() {
     const skip = () => {
         currentCall.current?.close();
         if (remoteVideo.current) remoteVideo.current.srcObject = null;
+        setPartnerName('');
+        setMessages([]);
+        setUnread(0);
         socketRef.current.emit('skip');
         findPartner();
     };
@@ -253,6 +235,7 @@ export default function Chat() {
         setStatus('idle');
         setMessages([]);
         setPartnerName('');
+        setUnread(0);
     };
 
     const sendMessage = (e) => {
@@ -300,133 +283,131 @@ export default function Chat() {
         peerRef.current?.destroy();
     };
 
-    const statusLine = () => {
-        if (status === 'waiting') {
-            return waitingTooLong
-                ? "Il n'y a personne pour le moment, recherche en cours…"
-                : "Recherche d'un partenaire…";
-        }
-        if (status === 'connected') return `Connecté avec ${partnerName}`;
-        if (status === 'ended') return 'La conversation est terminée';
-        return 'Démarrez une conversation depuis l’écran vidéo ci-dessus.';
+    const toggleChat = () => {
+        setChatOpen(open => {
+            const next = !open;
+            if (next) setUnread(0);
+            return next;
+        });
     };
 
-    const statusSub = () => {
-        if (status === 'connected') return 'En ligne';
-        if (status === 'waiting') return 'Patience…';
-        if (status === 'ended') return 'Tu peux lancer une nouvelle recherche';
-        return 'Pas connecté';
+    const remoteBadge = () => {
+        if (status === 'connected') return null;
+        if (status === 'waiting') {
+            return waitingTooLong ? 'Toujours personne… on cherche' : 'Connexion…';
+        }
+        if (status === 'ended') return 'Conversation terminée';
+        return 'En attente';
     };
 
     return (
-        <div className="chat-page">
-            <div className="video-grid-container">
-                {status === 'idle' && (
-                    <div className="state-overlay">
-                        <div style={{ fontSize: '48px' }}>🇲🇬</div>
-                        <h2>Prêt à rencontrer des Malagasy ?</h2>
-                        <p>Clique sur Démarrer pour trouver un partenaire</p>
-                        <button type="button" className="overlay-btn overlay-btn--primary" onClick={findPartner}>
-                            Démarrer
-                        </button>
+        <div className="ome-page">
+
+            {/* ── VIDÉO REMOTE (haut) ── */}
+            <section className="ome-remote">
+                <video ref={remoteVideo} autoPlay playsInline className="ome-video" />
+                <span className="ome-tag ome-tag--top">Stranger</span>
+                {remoteBadge() && (
+                    <div className="ome-overlay">
+                        <span className="ome-overlay__dot" />
+                        <span>{remoteBadge()}</span>
                     </div>
                 )}
-
-                {status === 'waiting' && (
-                    <div className="state-overlay">
-                        <div style={{ fontSize: '40px' }}>⏳</div>
-                        <h2>Recherche en cours…</h2>
-                        <p>
-                            {waitingTooLong
-                                ? "Il n'y a personne pour le moment, mais on continue de chercher… 🇲🇬"
-                                : "En attente d'un autre utilisateur"}
-                        </p>
-                        <button type="button" className="overlay-btn overlay-btn--muted" onClick={stop}>
-                            Annuler
-                        </button>
-                    </div>
+                {status === 'connected' && (
+                    <button
+                        type="button"
+                        className="ome-report"
+                        onClick={reportUser}
+                        aria-label="Signaler"
+                    >
+                        🚩
+                    </button>
                 )}
+            </section>
 
-                {status === 'ended' && (
-                    <div className="state-overlay">
-                        <div style={{ fontSize: '40px' }}>👋</div>
-                        <h2>La conversation est terminée</h2>
-                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                            <button type="button" className="overlay-btn overlay-btn--primary" onClick={findPartner}>
-                                Nouveau
-                            </button>
-                            <button type="button" className="overlay-btn overlay-btn--muted" onClick={stop}>
-                                Arrêter
-                            </button>
-                        </div>
-                    </div>
-                )}
+            {/* ── Ligne de séparation jaune ── */}
+            <div className="ome-divider" />
 
-                {/* Autre utilisateur — gauche */}
-                <div className="video-cell">
-                    <video ref={remoteVideo} autoPlay playsInline />
-                </div>
+            {/* ── VIDÉO LOCALE (bas) ── */}
+            <section className="ome-local">
+                <video
+                    ref={localVideo}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="ome-video ome-video--mirrored"
+                />
+                <span className="ome-tag ome-tag--bottom">You</span>
+                {isCamOff && <div className="ome-camoff">Caméra désactivée</div>}
+            </section>
 
-                {/* Moi — droite */}
-                <div className="video-cell">
-                    <video
-                        ref={localVideo}
-                        autoPlay
-                        playsInline
-                        muted
-                        style={{ transform: 'scaleX(-1)' }}
-                    />
-                </div>
-            </div>
-
-            <div className="controls-row">
+            {/* ── CONTRÔLES (overlay flottant) ── */}
+            <div className="ome-controls">
                 <button
                     type="button"
-                    className="btn-main btn-next"
-                    disabled={status !== 'connected'}
-                    onClick={skip}
-                >
-                    Next
-                </button>
-                <button type="button" className="btn-main btn-stop" onClick={stop}>
-                    Stop
-                </button>
-                <button
-                    type="button"
-                    className={`small-btn${isMuted ? ' small-btn--off' : ''}`}
+                    className={`ome-btn ome-btn--icon${isMuted ? ' is-off' : ''}`}
                     onClick={toggleMute}
-                    title="Micro"
                     aria-label="Micro"
                 >
                     {isMuted ? '🔇' : '🎤'}
                 </button>
                 <button
                     type="button"
-                    className={`small-btn${isCamOff ? ' small-btn--off' : ''}`}
+                    className={`ome-btn ome-btn--icon${isCamOff ? ' is-off' : ''}`}
                     onClick={toggleCam}
-                    title="Caméra"
                     aria-label="Caméra"
                 >
                     {isCamOff ? '📵' : '📷'}
                 </button>
+                <button
+                    type="button"
+                    className="ome-btn ome-btn--next"
+                    onClick={status === 'idle' ? findPartner : skip}
+                    aria-label="Suivant"
+                >
+                    {status === 'idle' ? 'Start' : 'Next'}
+                </button>
+                <button
+                    type="button"
+                    className="ome-btn ome-btn--stop"
+                    onClick={stop}
+                    aria-label="Stop"
+                >
+                    ✖
+                </button>
             </div>
 
-            <div className="chat-panel">
-                <div className="chat-status">
-                    <div className="chat-status-main">
-                        <p className="chat-status-title">{statusLine()}</p>
-                        <p className="chat-status-sub">{statusSub()}</p>
-                    </div>
-                    {status === 'connected' && (
-                        <button type="button" className="report-link" onClick={reportUser}>
-                            Signaler
-                        </button>
-                    )}
-                </div>
+            {/* ── BOUTON CHAT FLOTTANT ── */}
+            <button
+                type="button"
+                className="ome-fab"
+                onClick={toggleChat}
+                aria-label="Ouvrir le chat"
+            >
+                💬
+                {unread > 0 && <span className="ome-fab__badge">{unread}</span>}
+            </button>
 
-                <div className="chat-messages">
+            {/* ── PANEL CHAT (slide depuis le bas) ── */}
+            <div className={`ome-chat${chatOpen ? ' is-open' : ''}`}>
+                <div className="ome-chat__handle" onClick={toggleChat}>
+                    <div className="ome-chat__grip" />
+                </div>
+                <header className="ome-chat__header">
+                    <span>{status === 'connected' ? `💬 ${partnerName || 'Stranger'}` : 'Chat'}</span>
+                    <button
+                        type="button"
+                        className="ome-chat__close"
+                        onClick={toggleChat}
+                        aria-label="Fermer"
+                    >
+                        ✕
+                    </button>
+                </header>
+
+                <div className="ome-chat__messages">
                     {messages.length === 0 && (
-                        <p className="chat-empty">
+                        <p className="ome-chat__empty">
                             {status === 'connected'
                                 ? 'Dis bonjour ! 👋'
                                 : 'Les messages apparaîtront ici'}
@@ -435,36 +416,29 @@ export default function Chat() {
                     {messages.map((msg, i) => (
                         <div
                             key={i}
-                            className={`msg-row${msg.self ? ' msg-row--self' : ' msg-row--other'}`}
+                            className={`ome-msg${msg.self ? ' ome-msg--self' : ''}`}
                         >
-                            {!msg.self && <span className="msg-from">{msg.from}</span>}
-                            <div className={`msg-bubble${msg.self ? ' msg-bubble--self' : ' msg-bubble--other'}`}>
-                                {msg.text}
-                            </div>
-                            <span className="msg-time">{msg.time}</span>
+                            {!msg.self && <span className="ome-msg__from">{msg.from}</span>}
+                            <div className="ome-msg__bubble">{msg.text}</div>
+                            <span className="ome-msg__time">{msg.time}</span>
                         </div>
                     ))}
                     <div ref={messagesEnd} />
                 </div>
 
-                <form onSubmit={sendMessage} className="chat-input-row">
+                <form onSubmit={sendMessage} className="ome-chat__input">
                     <input
                         value={inputMsg}
                         onChange={(e) => setInputMsg(e.target.value)}
                         placeholder={status === 'connected' ? 'Écrire un message…' : 'En attente…'}
                         disabled={status !== 'connected'}
                     />
-                    <button type="submit" disabled={status !== 'connected'}>
-                        Envoyer
+                    <button type="submit" disabled={status !== 'connected'} aria-label="Envoyer">
+                        ➤
                     </button>
                 </form>
             </div>
 
-            <div className="chat-ads">
-                <AdSlot placement="video" minHeight={90} />
-                <div style={{ height: 8 }} />
-                <AdSlot placement="chat" minHeight={72} />
-            </div>
         </div>
     );
 }

@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../config';
+import './Login.css';
 
 export default function Login() {
     const [form, setForm] = useState({ email: '', password: '' });
@@ -83,75 +84,77 @@ export default function Login() {
     };
 
     return (
-        <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            minHeight: 'calc(100vh - 57px)', background: 'var(--gray)'
-        }}>
-            <div style={{
-                background: '#fff', padding: '2.5rem', borderRadius: '16px',
-                width: '100%', maxWidth: '400px',
-                border: '1px solid #e5e5e5'
-            }}>
-                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    <span style={{
-                        fontSize: '22px', fontWeight: '700', letterSpacing: '-1px',
-                        border: '2.5px solid #111', borderRadius: '8px',
-                        padding: '2px 10px'
-                    }}>wera</span>
-                    <h2 style={{ marginTop: '1rem', fontSize: '20px' }}>Se connecter</h2>
-                </div>
+        <div className="wera-login">
+            <div className="wera-login__split">
+                <section className="wera-login__left" aria-label="Connexion">
+                    <div className="wera-login__card">
+                        <div className="wera-login__cardHeader">
+                            <h2 className="wera-login__title">Se connecter</h2>
+                        </div>
 
-                {error && (
-                    <div style={{
-                        background: '#fee', color: '#c00', padding: '0.75rem',
-                        borderRadius: '8px', marginBottom: '1rem', fontSize: '14px'
-                    }}>
-                        {error}
+                        <div className="wera-login__google">
+                            <div ref={googleBtnRef} />
+                        </div>
+
+                        <div className="wera-login__divider" aria-hidden="true">
+                            <span className="wera-login__dividerLine" />
+                            <span className="wera-login__dividerText">ou</span>
+                            <span className="wera-login__dividerLine" />
+                        </div>
+
+                        {error && (
+                            <div className="wera-login__alert wera-login__alert--error">
+                                {error}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSubmit} className="wera-login__form">
+                            <input
+                                type="email"
+                                placeholder="Adresse Email"
+                                value={form.email}
+                                onChange={e => setForm({ ...form, email: e.target.value })}
+                                required
+                                className="wera-login__input"
+                            />
+                            <input
+                                type="password"
+                                placeholder="Mot de Passe"
+                                value={form.password}
+                                onChange={e => setForm({ ...form, password: e.target.value })}
+                                required
+                                className="wera-login__input"
+                            />
+
+                            <button disabled={submitting} type="submit" className="wera-login__button">
+                                {submitting ? 'Connexion…' : 'Se connecter'}
+                            </button>
+                        </form>
+
+                        <p className="wera-login__footer">
+                            Pas encore de compte ?{' '}
+                            <Link to="/register" className="wera-login__footerLink">
+                                S&apos;inscrire
+                            </Link>
+                        </p>
                     </div>
-                )}
+                </section>
 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <input
-                        type="email" placeholder="Email"
-                        value={form.email}
-                        onChange={e => setForm({ ...form, email: e.target.value })}
-                        required
-                        style={{
-                            padding: '0.75rem 1rem', borderRadius: '8px',
-                            border: '1px solid #ddd', fontSize: '15px', outline: 'none'
-                        }}
-                    />
-                    <input
-                        type="password" placeholder="Mot de passe"
-                        value={form.password}
-                        onChange={e => setForm({ ...form, password: e.target.value })}
-                        required
-                        style={{
-                            padding: '0.75rem 1rem', borderRadius: '8px',
-                            border: '1px solid #ddd', fontSize: '15px', outline: 'none'
-                        }}
-                    />
-                    <button disabled={submitting} type="submit" style={{
-                        background: 'var(--yellow)', color: '#111',
-                        border: 'none', padding: '0.85rem',
-                        borderRadius: '8px', fontSize: '15px',
-                        fontWeight: '600', cursor: submitting ? 'not-allowed' : 'pointer',
-                        opacity: submitting ? 0.7 : 1
-                    }}>
-                        Se connecter
-                    </button>
-                </form>
+                <section className="wera-login__right" aria-label="Aperçu">
+                    <div className="wera-login__rightOverlay">
+                        <div className="wera-login__headline">
+                            <div className="wera-login__headlineText">
+                                MIRESAKA MIZARA<br />
+                                N&apos;IZA N&apos;IZA<br />
+                                N&apos;AIZA N&apos;AIZA
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
 
-                <div style={{ marginTop: '1rem' }}>
-                    <div ref={googleBtnRef} />
-                </div>
-
-                <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '14px', color: '#666' }}>
-                    Pas encore de compte ?{' '}
-                    <Link to="/register" style={{ color: '#111', fontWeight: '600' }}>
-                        S'inscrire
-                    </Link>
-                </p>
+            <div className="wera-login__centerLogo" aria-hidden="true">
+                <img src="/wera.png" alt="" className="wera-login__centerLogoImg" />
             </div>
         </div>
     );

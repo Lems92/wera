@@ -1,0 +1,207 @@
+.wera-login {
+  min-height: 100vh;
+  padding-top: 0;
+  background: var(--yellow);
+}
+
+.wera-login__split {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.wera-login__left {
+  background: var(--yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Navbar is fixed; push content down a bit */
+  padding: 110px 18px 28px;
+}
+
+.wera-login__card {
+  width: 100%;
+  max-width: 420px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 22px;
+  padding: 20px 20px 16px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.wera-login__cardHeader {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.wera-login__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #111;
+}
+
+.wera-login__google {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.wera-login__divider {
+  margin: 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(0, 0, 0, 0.6);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.wera-login__dividerLine {
+  height: 1px;
+  flex: 1;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.wera-login__dividerText {
+  padding: 0 2px;
+}
+
+.wera-login__alert {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  border: 1px solid transparent;
+}
+
+.wera-login__alert--error {
+  background: #fee;
+  color: #b00020;
+  border-color: #ffd1d9;
+}
+
+.wera-login__form {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wera-login__input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.06);
+  font-size: 14px;
+  outline: none;
+}
+
+.wera-login__input:focus {
+  border-color: rgba(0, 0, 0, 0.28);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.wera-login__button {
+  margin-top: 4px;
+  background: #2f3948;
+  color: #fff;
+  border: none;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.wera-login__button:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.wera-login__footer {
+  margin: 12px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.wera-login__footerLink {
+  color: #111;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.wera-login__right {
+  position: relative;
+  min-height: 100vh;
+  background-image: url('/landing.png');
+  background-size: cover;
+  background-position: center top;
+}
+
+.wera-login__rightOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    rgba(0, 0, 0, 0.25) 0%,
+    rgba(0, 0, 0, 0.1) 50%,
+    rgba(0, 0, 0, 0.05) 100%
+  );
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 26px 26px 34px;
+}
+
+.wera-login__headlineText {
+  font-size: clamp(28px, 4vw, 56px);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: -1px;
+  color: var(--yellow);
+  text-transform: uppercase;
+  text-align: right;
+  text-shadow: 0 6px 22px rgba(0, 0, 0, 0.35);
+}
+
+.wera-login__centerLogo {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 112px;
+  height: 112px;
+  border-radius: 999px;
+  background: rgba(26, 32, 44, 0.95);
+  border: 12px solid rgba(255, 255, 255, 0.35);
+  display: grid;
+  place-items: center;
+  z-index: 1200;
+  pointer-events: none;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.25);
+}
+
+.wera-login__centerLogoImg {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  filter: brightness(1.05);
+}
+
+@media (max-width: 980px) {
+  .wera-login__split {
+    grid-template-columns: 1fr;
+  }
+  .wera-login__right {
+    display: none;
+  }
+  .wera-login__centerLogo {
+    display: none;
+  }
+}
+

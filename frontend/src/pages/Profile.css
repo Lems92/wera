@@ -1,0 +1,111 @@
+.wera-profile {
+  min-height: calc(100vh - 57px);
+  padding: 110px 16px 40px;
+  background: var(--gray);
+  display: flex;
+  justify-content: center;
+}
+
+.wera-profile__card {
+  width: 100%;
+  max-width: 520px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 16px;
+  padding: 22px;
+}
+
+.wera-profile__title {
+  margin: 0;
+  font-size: 22px;
+}
+
+.wera-profile__subtitle {
+  margin: 6px 0 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.wera-profile__alert {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  border: 1px solid transparent;
+}
+
+.wera-profile__alert--error {
+  background: #fee;
+  color: #b00020;
+  border-color: #ffd1d9;
+}
+
+.wera-profile__alert--success {
+  background: #eefcf2;
+  color: #0b6b2b;
+  border-color: #c8f1d6;
+}
+
+.wera-profile__loading {
+  margin-top: 18px;
+  color: #333;
+  font-size: 14px;
+}
+
+.wera-profile__form {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.wera-profile__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wera-profile__label {
+  font-size: 13px;
+  color: #444;
+  font-weight: 600;
+}
+
+.wera-profile__input {
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  font-size: 15px;
+  outline: none;
+  background: #fff;
+}
+
+.wera-profile__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.wera-profile__button {
+  margin-top: 4px;
+  background: var(--yellow);
+  color: #111;
+  border: none;
+  padding: 0.9rem;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.wera-profile__button:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+@media (max-width: 520px) {
+  .wera-profile__grid {
+    grid-template-columns: 1fr;
+  }
+}
+

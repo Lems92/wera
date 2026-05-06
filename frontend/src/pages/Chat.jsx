@@ -42,7 +42,7 @@ export default function Chat() {
 
     useEffect(() => {
         if (!user) navigate('/login');
-    }, [user]);
+    }, [user, navigate]);
 
     useEffect(() => {
         initSocket();
@@ -98,6 +98,7 @@ export default function Chat() {
             setStatus('connected');
             setMessages([]);
             setUnread(0);
+            setChatOpen(false);
             connectVideo(partnerPeerId, initiator);
         });
 
@@ -228,6 +229,15 @@ export default function Chat() {
         pendingFindRef.current = false;
         if (status === 'waiting') {
             socketRef.current.emit('cancel_search');
+        } else if (status === 'connected') {
+            // Stop pendant l'appel: on libère la paire puis on bascule vers un autre utilisateur
+            // déjà en recherche (équivalent "Next" auto).
+            socketRef.current.emit('skip');
+            if (remoteVideo.current) remoteVideo.current.srcObject = null;
+            setPartnerName('');
+            setMessages([]);
+            setUnread(0);
+            return findPartner();
         } else {
             socketRef.current.emit('skip');
         }

@@ -11,6 +11,7 @@ const fs = require('fs');
 
 const authRoutes = require('./routes/auth');
 const reportRoutes = require('./routes/reports');
+const userRoutes = require('./routes/users');
 
 const app = express();
 
@@ -169,6 +170,7 @@ app.use('/api', limiter);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/users', userRoutes);
 
 app.get('/api', (req, res) => res.json({ status: 'ok', message: 'Wera API is accessible' }));
 app.get('/', (req, res) => res.json({ message: 'Wera API is running 🇲🇬' }));

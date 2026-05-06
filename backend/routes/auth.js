@@ -157,7 +157,17 @@ router.post('/google', async (req, res) => {
 
             const { data: created, error: createErr } = await supabase
                 .from('users')
-                .insert([{ username, email, password_hash: hash }])
+                .insert([{
+                    username,
+                    email,
+                    password_hash: hash,
+                    // If your schema requires these fields (NOT NULL),
+                    // we insert safe defaults for Google sign-ups.
+                    age: 18,
+                    sexe: 'Autre',
+                    ville: '—',
+                    pays: '—'
+                }])
                 .select()
                 .single();
             if (createErr) return res.status(400).json({ error: 'Impossible de créer le compte Google' });

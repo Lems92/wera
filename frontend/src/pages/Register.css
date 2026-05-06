@@ -1,0 +1,220 @@
+.wera-register {
+  min-height: calc(100vh - 57px);
+  padding-top: 57px;
+  background: var(--gray);
+}
+
+.wera-register__split {
+  min-height: calc(100vh - 57px);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.wera-register__left {
+  background: var(--yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 18px;
+}
+
+.wera-register__card {
+  width: 100%;
+  max-width: 420px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 22px;
+  padding: 20px 20px 16px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.wera-register__cardHeader {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.wera-register__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #111;
+}
+
+.wera-register__google {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.wera-register__divider {
+  margin: 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(0, 0, 0, 0.6);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.wera-register__dividerLine {
+  height: 1px;
+  flex: 1;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.wera-register__dividerText {
+  padding: 0 2px;
+}
+
+.wera-register__alert {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  border: 1px solid transparent;
+}
+
+.wera-register__alert--error {
+  background: #fee;
+  color: #b00020;
+  border-color: #ffd1d9;
+}
+
+.wera-register__form {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wera-register__input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.06);
+  font-size: 14px;
+  outline: none;
+}
+
+.wera-register__input:focus {
+  border-color: rgba(0, 0, 0, 0.28);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.wera-register__password {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wera-register__hint {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.65);
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.wera-register__button {
+  margin-top: 4px;
+  background: #2f3948;
+  color: #fff;
+  border: none;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.wera-register__button:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.wera-register__footer {
+  margin: 12px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.wera-register__footerLink {
+  color: #111;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.wera-register__right {
+  position: relative;
+  background-image: url('/landing.png');
+  background-size: cover;
+  background-position: center;
+}
+
+.wera-register__rightOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    rgba(0, 0, 0, 0.25) 0%,
+    rgba(0, 0, 0, 0.1) 50%,
+    rgba(0, 0, 0, 0.05) 100%
+  );
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 26px 26px 34px;
+}
+
+.wera-register__headlineText {
+  font-size: clamp(28px, 4vw, 56px);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: -1px;
+  color: var(--yellow);
+  text-transform: uppercase;
+  text-align: right;
+  text-shadow: 0 6px 22px rgba(0, 0, 0, 0.35);
+}
+
+.wera-register__centerLogo {
+  position: fixed;
+  left: 50%;
+  top: calc(57px + (50vh - 57px) / 2);
+  transform: translate(-50%, -50%);
+  width: 84px;
+  height: 84px;
+  border-radius: 999px;
+  background: rgba(26, 32, 44, 0.95);
+  border: 10px solid rgba(255, 255, 255, 0.35);
+  display: grid;
+  place-items: center;
+  z-index: 1200;
+  pointer-events: none;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.25);
+}
+
+.wera-register__centerLogoImg {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  filter: brightness(1.05);
+}
+
+@media (max-width: 980px) {
+  .wera-register__split {
+    grid-template-columns: 1fr;
+  }
+  .wera-register__right {
+    display: none;
+  }
+  .wera-register__centerLogo {
+    display: none;
+  }
+}
+

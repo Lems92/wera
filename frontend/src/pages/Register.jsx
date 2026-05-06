@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../config';
+import './Register.css';
 
 function validatePassword(pw) {
     const errors = [];
@@ -117,149 +118,130 @@ export default function Register() {
     };
 
     return (
-        <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            minHeight: 'calc(100vh - 57px)', background: 'var(--gray)'
-        }}>
-            <div style={{
-                background: '#fff', padding: '2.5rem', borderRadius: '16px',
-                width: '100%', maxWidth: '400px',
-                border: '1px solid #e5e5e5'
-            }}>
-                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    <span style={{
-                        fontSize: '22px', fontWeight: '700', letterSpacing: '-1px',
-                        border: '2.5px solid #111', borderRadius: '8px',
-                        padding: '2px 10px'
-                    }}>wera</span>
-                    <h2 style={{ marginTop: '1rem', fontSize: '20px' }}>Créer un compte</h2>
-                </div>
-
-                {error && (
-                    <div style={{
-                        background: '#fee', color: '#c00', padding: '0.75rem',
-                        borderRadius: '8px', marginBottom: '1rem', fontSize: '14px'
-                    }}>
-                        {error}
-                    </div>
-                )}
-
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <input
-                        type="text" placeholder="Nom d'utilisateur"
-                        value={form.username}
-                        onChange={e => setForm({ ...form, username: e.target.value })}
-                        required
-                        style={{
-                            padding: '0.75rem 1rem', borderRadius: '8px',
-                            border: '1px solid #ddd', fontSize: '15px', outline: 'none'
-                        }}
-                    />
-                    <input
-                        type="email" placeholder="Email"
-                        value={form.email}
-                        onChange={e => setForm({ ...form, email: e.target.value })}
-                        required
-                        style={{
-                            padding: '0.75rem 1rem', borderRadius: '8px',
-                            border: '1px solid #ddd', fontSize: '15px', outline: 'none'
-                        }}
-                    />
-                    <input
-                        type="number"
-                        inputMode="numeric"
-                        placeholder="Âge"
-                        value={form.age}
-                        onChange={e => setForm({ ...form, age: e.target.value })}
-                        required
-                        min={13}
-                        max={120}
-                        style={{
-                            padding: '0.75rem 1rem', borderRadius: '8px',
-                            border: '1px solid #ddd', fontSize: '15px', outline: 'none'
-                        }}
-                    />
-                    <select
-                        value={form.sexe}
-                        onChange={e => setForm({ ...form, sexe: e.target.value })}
-                        required
-                        style={{
-                            padding: '0.75rem 1rem', borderRadius: '8px',
-                            border: '1px solid #ddd', fontSize: '15px', outline: 'none',
-                            background: '#fff'
-                        }}
-                    >
-                        <option value="" disabled>Sexe</option>
-                        <option value="Homme">Homme</option>
-                        <option value="Femme">Femme</option>
-                        <option value="Autre">Autre</option>
-                    </select>
-                    <input
-                        type="text"
-                        placeholder="Ville"
-                        value={form.ville}
-                        onChange={e => setForm({ ...form, ville: e.target.value })}
-                        required
-                        style={{
-                            padding: '0.75rem 1rem', borderRadius: '8px',
-                            border: '1px solid #ddd', fontSize: '15px', outline: 'none'
-                        }}
-                    />
-                    <input
-                        type="text"
-                        placeholder="Pays"
-                        value={form.pays}
-                        onChange={e => setForm({ ...form, pays: e.target.value })}
-                        required
-                        style={{
-                            padding: '0.75rem 1rem', borderRadius: '8px',
-                            border: '1px solid #ddd', fontSize: '15px', outline: 'none'
-                        }}
-                    />
-                    <input
-                        type="password" placeholder="Mot de passe"
-                        value={form.password}
-                        onChange={e => setForm({ ...form, password: e.target.value })}
-                        required
-                        style={{
-                            padding: '0.75rem 1rem', borderRadius: '8px',
-                            border: '1px solid #ddd', fontSize: '15px', outline: 'none'
-                        }}
-                    />
-                    {form.password && passwordErrors.length > 0 && (
-                        <div style={{
-                            fontSize: '12px',
-                            color: '#666',
-                            background: '#f7f7f7',
-                            border: '1px solid #eee',
-                            borderRadius: '8px',
-                            padding: '0.75rem 1rem'
-                        }}>
-                            Mot de passe: {passwordErrors.join(' · ')}
+        <div className="wera-register">
+            <div className="wera-register__split">
+                <section className="wera-register__left" aria-label="Inscription">
+                    <div className="wera-register__card">
+                        <div className="wera-register__cardHeader">
+                            <h2 className="wera-register__title">Créer un compte</h2>
                         </div>
-                    )}
 
-                    <button disabled={submitting} type="submit" style={{
-                        background: 'var(--yellow)', color: '#111',
-                        border: 'none', padding: '0.85rem',
-                        borderRadius: '8px', fontSize: '15px',
-                        fontWeight: '600', cursor: submitting ? 'not-allowed' : 'pointer',
-                        opacity: submitting ? 0.7 : 1
-                    }}>
-                        S'inscrire
-                    </button>
-                </form>
+                        <div className="wera-register__google">
+                            <div ref={googleBtnRef} />
+                        </div>
 
-                <div style={{ marginTop: '1rem' }}>
-                    <div ref={googleBtnRef} />
-                </div>
+                        <div className="wera-register__divider" aria-hidden="true">
+                            <span className="wera-register__dividerLine" />
+                            <span className="wera-register__dividerText">ou</span>
+                            <span className="wera-register__dividerLine" />
+                        </div>
 
-                <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '14px', color: '#666' }}>
-                    Déjà un compte ?{' '}
-                    <Link to="/login" style={{ color: '#111', fontWeight: '600' }}>
-                        Se connecter
-                    </Link>
-                </p>
+                        {error && (
+                            <div className="wera-register__alert wera-register__alert--error">
+                                {error}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSubmit} className="wera-register__form">
+                            <input
+                                type="text"
+                                placeholder="Nom d'utilisateur"
+                                value={form.username}
+                                onChange={e => setForm({ ...form, username: e.target.value })}
+                                required
+                                className="wera-register__input"
+                            />
+                            <input
+                                type="email"
+                                placeholder="Adresse Email"
+                                value={form.email}
+                                onChange={e => setForm({ ...form, email: e.target.value })}
+                                required
+                                className="wera-register__input"
+                            />
+                            <input
+                                type="number"
+                                inputMode="numeric"
+                                placeholder="Âge"
+                                value={form.age}
+                                onChange={e => setForm({ ...form, age: e.target.value })}
+                                required
+                                min={13}
+                                max={120}
+                                className="wera-register__input"
+                            />
+                            <select
+                                value={form.sexe}
+                                onChange={e => setForm({ ...form, sexe: e.target.value })}
+                                required
+                                className="wera-register__input"
+                            >
+                                <option value="" disabled>Sexe</option>
+                                <option value="Homme">Homme</option>
+                                <option value="Femme">Femme</option>
+                                <option value="Autre">Autre</option>
+                            </select>
+                            <input
+                                type="text"
+                                placeholder="Ville"
+                                value={form.ville}
+                                onChange={e => setForm({ ...form, ville: e.target.value })}
+                                required
+                                className="wera-register__input"
+                            />
+                            <input
+                                type="text"
+                                placeholder="Pays"
+                                value={form.pays}
+                                onChange={e => setForm({ ...form, pays: e.target.value })}
+                                required
+                                className="wera-register__input"
+                            />
+                            <div className="wera-register__password">
+                                <input
+                                    type="password"
+                                    placeholder="Mot de Passe"
+                                    value={form.password}
+                                    onChange={e => setForm({ ...form, password: e.target.value })}
+                                    required
+                                    className="wera-register__input"
+                                />
+                                {form.password && passwordErrors.length > 0 && (
+                                    <div className="wera-register__hint">
+                                        Mot de passe: {passwordErrors.join(' · ')}
+                                    </div>
+                                )}
+                            </div>
+
+                            <button disabled={submitting} type="submit" className="wera-register__button">
+                                {submitting ? 'Création…' : 'Créer un compte'}
+                            </button>
+                        </form>
+
+                        <p className="wera-register__footer">
+                            Vous avez déjà un compte ?{' '}
+                            <Link to="/login" className="wera-register__footerLink">
+                                Connectez‑vous
+                            </Link>
+                        </p>
+                    </div>
+                </section>
+
+                <section className="wera-register__right" aria-label="Aperçu">
+                    <div className="wera-register__rightOverlay">
+                        <div className="wera-register__headline">
+                            <div className="wera-register__headlineText">
+                                MIRESAKA MIZARA<br />
+                                N&apos;IZA N&apos;IZA<br />
+                                N&apos;AIZA N&apos;AIZA
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div className="wera-register__centerLogo" aria-hidden="true">
+                <img src="/wera.png" alt="" className="wera-register__centerLogoImg" />
             </div>
         </div>
     );

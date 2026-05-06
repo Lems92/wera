@@ -10,6 +10,7 @@ export default function Navbar() {
     const isHome = location.pathname === '/';
     const [open, setOpen] = useState(false);
     const menuRef = useRef(null);
+    const avatarLetter = (user?.username || '?').trim().charAt(0).toUpperCase();
 
     const handleLogout = () => {
         logout();
@@ -46,12 +47,16 @@ export default function Navbar() {
                     <div className="wera-navbar__menu" ref={menuRef}>
                         <button
                             type="button"
-                            className="wera-navbar__menubutton"
+                            className="wera-navbar__avatarButton"
                             aria-haspopup="menu"
                             aria-expanded={open}
                             onClick={() => setOpen(v => !v)}
+                            title="Profil"
                         >
-                            Salut, {user.username}
+                            <span className="wera-navbar__avatar" aria-hidden="true">
+                                {avatarLetter}
+                            </span>
+                            <span className="wera-navbar__srOnly">Ouvrir le menu profil</span>
                         </button>
                         {open && (
                             <div className="wera-navbar__dropdown" role="menu" aria-label="Profil">

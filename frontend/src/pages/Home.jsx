@@ -52,9 +52,9 @@ export default function Home() {
                     </svg>
 
                     <div className="title">
-                        NAHITA<br />
-                        AKAMA<br />
-                        IHANY
+                        MIRESAKA, MIZARA<br />
+                        N&apos;IZA N&apos;IZA<br />
+                        N&apos;AIZA N&apos;AIZA
                     </div>
                 </div>
 

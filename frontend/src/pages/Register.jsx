@@ -231,7 +231,7 @@ export default function Register() {
                     <div className="wera-register__rightOverlay">
                         <div className="wera-register__headline">
                             <div className="wera-register__headlineText">
-                                MIRESAKA MIZARA<br />
+                                MIRESAKA, MIZARA<br />
                                 N&apos;IZA N&apos;IZA<br />
                                 N&apos;AIZA N&apos;AIZA
                             </div>

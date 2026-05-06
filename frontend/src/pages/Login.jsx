@@ -144,7 +144,7 @@ export default function Login() {
                     <div className="wera-login__rightOverlay">
                         <div className="wera-login__headline">
                             <div className="wera-login__headlineText">
-                                MIRESAKA MIZARA<br />
+                                MIRESAKA, MIZARA<br />
                                 N&apos;IZA N&apos;IZA<br />
                                 N&apos;AIZA N&apos;AIZA
                             </div>

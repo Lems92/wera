@@ -27,7 +27,7 @@
 }
 
 .wera-navbar__logo {
-  font-family: 'Baloo 2', cursive;
+  font-family: inherit;
   font-size: 28px;
   font-weight: 800;
   color: #222;

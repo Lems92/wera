@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -8,149 +9,151 @@ export default function Navbar() {
     const navigate = useNavigate();
     const location = useLocation();
     const isHome = location.pathname === '/';
-    const [profileOpen, setProfileOpen] = useState(false);
-    const [mobileOpen, setMobileOpen] = useState(false);
-    const menuRef = useRef(null);
-    const avatarLetter = (user?.username || '?').trim().charAt(0).toUpperCase();
+    const [open, setOpen] = useState(false);
+
+    // Close menu when route changes
+    useEffect(() => {
+        setOpen(false);
+    }, [location.pathname]);
+
+    // Lock body scroll while the mobile menu is open
+    useEffect(() => {
+        if (!open) return;
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = prev; };
+    }, [open]);
+
+    // Close on Escape key
+    useEffect(() => {
+        if (!open) return;
+        const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [open]);
 
     const handleLogout = () => {
         logout();
-        setProfileOpen(false);
-        setMobileOpen(false);
+        setOpen(false);
         navigate('/');
     };
 
-    useEffect(() => {
-        function onDocClick(e) {
-            if (!menuRef.current) return;
-            if (!menuRef.current.contains(e.target)) setProfileOpen(false);
-        }
-        function onEsc(e) {
-            if (e.key !== 'Escape') return;
-            setProfileOpen(false);
-            setMobileOpen(false);
-        }
-        document.addEventListener('mousedown', onDocClick);
-        document.addEventListener('keydown', onEsc);
-        return () => {
-            document.removeEventListener('mousedown', onDocClick);
-            document.removeEventListener('keydown', onEsc);
-        };
-    }, []);
-
-    useEffect(() => {
-        // Close the mobile menu when navigating.
-        setMobileOpen(false);
-        setProfileOpen(false);
-    }, [location.pathname]);
-
-    useEffect(() => {
-        // Prevent background scroll when mobile menu is open.
-        if (!mobileOpen) return;
-        const prev = document.body.style.overflow;
-        document.body.style.overflow = 'hidden';
-        return () => {
-            document.body.style.overflow = prev;
-        };
-    }, [mobileOpen]);
+    const close = () => setOpen(false);
 
     return (
-        <header className={`wera-navbar ${isHome ? 'wera-navbar--home' : 'wera-navbar--app'}`}>
-            <Link to="/" className="wera-navbar__logo" aria-label="Wera">
-                <img className="wera-navbar__logoImg" src="/logo.png" alt="Wera" />
-            </Link>
+        <>
+            <header className={`wera-navbar ${isHome ? 'wera-navbar--home' : 'wera-navbar--app'}`}>
+                <Link to="/" className="wera-navbar__logo" onClick={close}>wera</Link>
 
-            <button
-                type="button"
-                className="wera-navbar__burger"
-                aria-label={mobileOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
-                aria-expanded={mobileOpen}
-                aria-controls="wera-mobile-menu"
-                onClick={() => setMobileOpen(v => !v)}
-            >
-                <span className="wera-navbar__burgerIcon" aria-hidden="true" />
-            </button>
+                {/* Desktop links */}
+                <nav className="wera-navbar__links" aria-label="Primary">
+                    {!user ? (
+                        <>
+                            <Link className="wera-navbar__link" to="/login">Se Connecter</Link>
+                            <Link className="wera-navbar__link" to="/register">Nouveau compte</Link>
+                        </>
+                    ) : (
+                        <span className="wera-navbar__link">Salut, {user.username}</span>
+                    )}
 
-            <nav className="wera-navbar__links" aria-label="Primary">
-                {!user ? (
-                    <>
-                        <Link className="wera-navbar__link" to="/login">Se Connecter</Link>
-                        <Link className="wera-navbar__link" to="/register">Nouveau compte</Link>
-                    </>
-                ) : (
-                    <div className="wera-navbar__menu" ref={menuRef}>
-                        <button
-                            type="button"
-                            className="wera-navbar__avatarButton"
-                            aria-haspopup="menu"
-                            aria-expanded={profileOpen}
-                            onClick={() => setProfileOpen(v => !v)}
-                            title="Profil"
-                        >
-                            <span className="wera-navbar__avatar" aria-hidden="true">
-                                {avatarLetter}
-                            </span>
-                            <span className="wera-navbar__srOnly">Ouvrir le menu profil</span>
+                    <Link className="wera-navbar__link" to="/about">A Propos</Link>
+                    <Link className="wera-navbar__link" to="/contact">Contact</Link>
+
+                    {user && (
+                        <button className="wera-navbar__button" onClick={handleLogout}>
+                            Déconnexion
                         </button>
-                        {profileOpen && (
-                            <div className="wera-navbar__dropdown" role="menu" aria-label="Profil">
-                                <Link
-                                    className="wera-navbar__dropdownItem"
-                                    role="menuitem"
-                                    to="/profile"
-                                    onClick={() => setProfileOpen(false)}
-                                >
-                                    Profil
-                                </Link>
-                                <button
-                                    className="wera-navbar__dropdownItem wera-navbar__dropdownItem--danger"
-                                    role="menuitem"
-                                    type="button"
-                                    onClick={handleLogout}
-                                >
-                                    Déconnexion
-                                </button>
-                            </div>
-                        )}
+                    )}
+                </nav>
+
+                {/* Burger button (mobile only) */}
+                <button
+                    type="button"
+                    className={`wera-burger${open ? ' is-open' : ''}`}
+                    onClick={() => setOpen(o => !o)}
+                    aria-label={open ? 'Fermer le menu' : 'Ouvrir le menu'}
+                    aria-expanded={open}
+                    aria-controls="wera-mobile-nav"
+                >
+                    <span />
+                    <span />
+                    <span />
+                </button>
+            </header>
+
+            {/* Mobile drawer + backdrop */}
+            <div
+                className={`wera-backdrop${open ? ' is-open' : ''}`}
+                onClick={close}
+                aria-hidden="true"
+            />
+
+            <nav
+                id="wera-mobile-nav"
+                className={`wera-drawer${open ? ' is-open' : ''}`}
+                aria-label="Mobile"
+                aria-hidden={!open}
+            >
+                <div className="wera-drawer__head">
+                    <span className="wera-drawer__brand">wera</span>
+                    <button
+                        type="button"
+                        className="wera-drawer__close"
+                        onClick={close}
+                        aria-label="Fermer"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                {user && (
+                    <div className="wera-drawer__user">
+                        <div className="wera-drawer__avatar">
+                            {user.username?.[0]?.toUpperCase() || '?'}
+                        </div>
+                        <div>
+                            <p className="wera-drawer__hello">Salut,</p>
+                            <p className="wera-drawer__name">{user.username}</p>
+                        </div>
                     </div>
                 )}
 
-                <Link className="wera-navbar__link" to="/about">A Propos</Link>
-                <Link className="wera-navbar__link" to="/contact">Contact</Link>
-            </nav>
-
-            {mobileOpen && <div className="wera-navbar__mobileOverlay" onClick={() => setMobileOpen(false)} />}
-            <aside
-                id="wera-mobile-menu"
-                className={`wera-navbar__mobilePanel ${mobileOpen ? 'is-open' : ''}`}
-                aria-hidden={!mobileOpen}
-                aria-label="Menu"
-            >
-                <div className="wera-navbar__mobileLinks">
-                    {!user ? (
+                <ul className="wera-drawer__list">
+                    {!user && (
                         <>
-                            <Link className="wera-navbar__mobileLink" to="/login">Se Connecter</Link>
-                            <Link className="wera-navbar__mobileLink" to="/register">Nouveau compte</Link>
-                        </>
-                    ) : (
-                        <>
-                            <Link className="wera-navbar__mobileLink" to="/profile">Profil</Link>
-                            <button
-                                type="button"
-                                className="wera-navbar__mobileButton wera-navbar__mobileButton--danger"
-                                onClick={handleLogout}
-                            >
-                                Déconnexion
-                            </button>
+                            <li>
+                                <Link className="wera-drawer__link" to="/login" onClick={close}>
+                                    Se connecter
+                                </Link>
+                            </li>
+                            <li>
+                                <Link className="wera-drawer__link wera-drawer__link--primary" to="/register" onClick={close}>
+                                    Nouveau compte
+                                </Link>
+                            </li>
                         </>
                     )}
+                    <li>
+                        <Link className="wera-drawer__link" to="/about" onClick={close}>
+                            À propos
+                        </Link>
+                    </li>
+                    <li>
+                        <Link className="wera-drawer__link" to="/contact" onClick={close}>
+                            Contact
+                        </Link>
+                    </li>
+                    {user && (
+                        <li>
+                            <button className="wera-drawer__link wera-drawer__link--danger" onClick={handleLogout}>
+                                Déconnexion
+                            </button>
+                        </li>
+                    )}
+                </ul>
 
-                    <div className="wera-navbar__mobileDivider" aria-hidden="true" />
-
-                    <Link className="wera-navbar__mobileLink" to="/about">A Propos</Link>
-                    <Link className="wera-navbar__mobileLink" to="/contact">Contact</Link>
-                </div>
-            </aside>
-        </header>
+                <p className="wera-drawer__foot">Wera 🇲🇬 — fait à Madagascar</p>
+            </nav>
+        </>
     );
 }

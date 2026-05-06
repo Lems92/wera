@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -7,17 +7,78 @@ import { API_URL } from '../config';
 export default function Login() {
     const [form, setForm] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
+    const [submitting, setSubmitting] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
+    const googleBtnRef = useRef(null);
+
+    useEffect(() => {
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+        if (!clientId) return;
+        if (!googleBtnRef.current) return;
+
+        let cancelled = false;
+        const tryInit = () => {
+            if (cancelled) return false;
+            if (!window.google?.accounts?.id) return false;
+
+            try {
+                window.google.accounts.id.initialize({
+                    client_id: clientId,
+                    callback: async (response) => {
+                        try {
+                            setError('');
+                            setSubmitting(true);
+                            const res = await axios.post(`${API_URL}/auth/google`, { credential: response.credential });
+                            login(res.data.user, res.data.token);
+                            navigate('/');
+                        } catch (err) {
+                            setError(err.response?.data?.error || 'Erreur Google');
+                        } finally {
+                            setSubmitting(false);
+                        }
+                    }
+                });
+                googleBtnRef.current.innerHTML = '';
+                window.google.accounts.id.renderButton(googleBtnRef.current, {
+                    theme: 'outline',
+                    size: 'large',
+                    shape: 'pill',
+                    width: 340,
+                    text: 'continue_with'
+                });
+                return true;
+            } catch {
+                return false;
+            }
+        };
+
+        // Script loads async; retry briefly.
+        if (tryInit()) return () => { cancelled = true; };
+        const interval = setInterval(() => {
+            if (tryInit()) clearInterval(interval);
+        }, 250);
+        const timeout = setTimeout(() => clearInterval(interval), 5000);
+
+        return () => {
+            cancelled = true;
+            clearInterval(interval);
+            clearTimeout(timeout);
+        };
+    }, [login, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            setError('');
+            setSubmitting(true);
             const res = await axios.post(`${API_URL}/auth/login`, form);
             login(res.data.user, res.data.token);
             navigate('/');
         } catch (err) {
             setError(err.response?.data?.error || 'Erreur de connexion');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -70,15 +131,20 @@ export default function Login() {
                             border: '1px solid #ddd', fontSize: '15px', outline: 'none'
                         }}
                     />
-                    <button type="submit" style={{
+                    <button disabled={submitting} type="submit" style={{
                         background: 'var(--yellow)', color: '#111',
                         border: 'none', padding: '0.85rem',
                         borderRadius: '8px', fontSize: '15px',
-                        fontWeight: '600', cursor: 'pointer'
+                        fontWeight: '600', cursor: submitting ? 'not-allowed' : 'pointer',
+                        opacity: submitting ? 0.7 : 1
                     }}>
                         Se connecter
                     </button>
                 </form>
+
+                <div style={{ marginTop: '1rem' }}>
+                    <div ref={googleBtnRef} />
+                </div>
 
                 <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '14px', color: '#666' }}>
                     Pas encore de compte ?{' '}

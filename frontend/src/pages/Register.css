@@ -1,11 +1,11 @@
 .wera-register {
-  min-height: calc(100vh - 57px);
-  padding-top: 57px;
-  background: var(--gray);
+  min-height: 100vh;
+  padding-top: 0;
+  background: var(--yellow);
 }
 
 .wera-register__split {
-  min-height: calc(100vh - 57px);
+  min-height: 100vh;
   display: grid;
   grid-template-columns: 1fr 1fr;
 }
@@ -151,9 +151,10 @@
 
 .wera-register__right {
   position: relative;
+  min-height: 100vh;
   background-image: url('/landing.png');
   background-size: cover;
-  background-position: center;
+  background-position: center top;
 }
 
 .wera-register__rightOverlay {
@@ -185,13 +186,13 @@
 .wera-register__centerLogo {
   position: fixed;
   left: 50%;
-  top: calc(57px + (50vh - 57px) / 2);
+  top: 50%;
   transform: translate(-50%, -50%);
-  width: 84px;
-  height: 84px;
+  width: 112px;
+  height: 112px;
   border-radius: 999px;
   background: rgba(26, 32, 44, 0.95);
-  border: 10px solid rgba(255, 255, 255, 0.35);
+  border: 12px solid rgba(255, 255, 255, 0.35);
   display: grid;
   place-items: center;
   z-index: 1200;
@@ -200,8 +201,8 @@
 }
 
 .wera-register__centerLogoImg {
-  width: 44px;
-  height: 44px;
+  width: 60px;
+  height: 60px;
   object-fit: contain;
   filter: brightness(1.05);
 }

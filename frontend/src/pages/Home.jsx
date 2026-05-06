@@ -66,7 +66,7 @@ export default function Home() {
 
                 <div className="right">
                     <img
-                        src="/landing.png"
+                        src="/landing2.png"
                         alt=""
                     />
                 </div>

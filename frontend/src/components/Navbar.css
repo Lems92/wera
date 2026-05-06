@@ -27,11 +27,18 @@
 }
 
 .wera-navbar__logo {
-  font-family: inherit;
-  font-size: 28px;
-  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   color: #222;
   text-decoration: none;
+}
+
+.wera-navbar__logoImg {
+  display: block;
+  height: 34px;
+  width: auto;
+  object-fit: contain;
 }
 
 .wera-navbar__links {
@@ -41,9 +48,10 @@
 }
 
 .wera-navbar__link {
-  text-decoration: none;
   color: #222;
   font-weight: 500;
+  text-shadow: 0 0 #000000;
+  text-decoration: none;
 }
 
 .wera-navbar__button {

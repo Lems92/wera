@@ -36,7 +36,9 @@ export default function Navbar() {
 
     return (
         <header className={`wera-navbar ${isHome ? 'wera-navbar--home' : 'wera-navbar--app'}`}>
-            <Link to="/" className="wera-navbar__logo">wera</Link>
+            <Link to="/" className="wera-navbar__logo" aria-label="Wera">
+                <img className="wera-navbar__logoImg" src="/logo.png" alt="Wera" />
+            </Link>
             <nav className="wera-navbar__links" aria-label="Primary">
                 {!user ? (
                     <>

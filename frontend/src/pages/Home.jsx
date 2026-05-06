@@ -66,7 +66,7 @@ export default function Home() {
 
                 <div className="right">
                     <img
-                        src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e"
+                        src="/landing.png"
                         alt=""
                     />
                 </div>

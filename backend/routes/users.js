@@ -4,6 +4,15 @@ const supabase = require('../config/supabase');
 const auth = require('../middleware/authMiddleware');
 const jwt = require('jsonwebtoken');
 
+const IS_PROD = Boolean(process.env.RENDER) || process.env.NODE_ENV === 'production';
+const COOKIE_OPTIONS = Object.freeze({
+    httpOnly: true,
+    secure: IS_PROD,
+    sameSite: IS_PROD ? 'none' : 'lax',
+    maxAge: 24 * 60 * 60 * 1000,
+    path: '/'
+});
+
 const USERNAME_RE = /^[a-z0-9._-]{3,24}$/;
 const MAX_SEXE = 20;
 const MAX_VILLE = 60;
@@ -110,13 +119,15 @@ router.put('/me', auth, async (req, res) => {
             return res.status(400).json({ error: 'Impossible de mettre à jour le profil' });
         }
 
-        // If username changed, return a fresh JWT so token payload stays accurate.
+        // If username changed, return a fresh JWT so the token payload stays
+        // accurate. Set both the HttpOnly cookie and return the token in the
+        // body for backwards compatibility.
         const token = jwt.sign(
             { id: updated.id, username: updated.username },
             process.env.JWT_SECRET,
-            { expiresIn: '7d' }
+            { expiresIn: '24h' }
         );
-
+        res.cookie('wera_token', token, COOKIE_OPTIONS);
         res.json({ token, user: pickUserRow(updated) });
     } catch (err) {
         console.error('users/me PUT error:', err?.message || err);

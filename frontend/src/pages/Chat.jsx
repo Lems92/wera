@@ -33,6 +33,7 @@ export default function Chat() {
     const userRef = useRef(null);
     const waitingTimerRef = useRef(null);
     const statusRef = useRef('idle');
+    const stopInitiatedRef = useRef(false);
 
     useEffect(() => { userRef.current = user; }, [user]);
     useEffect(() => { statusRef.current = status; }, [status]);
@@ -96,6 +97,7 @@ export default function Chat() {
 
         socketRef.current.on('partner_found', ({ partnerPeerId, partnerUsername, partnerUserId, initiator }) => {
             pendingFindRef.current = false;
+            stopInitiatedRef.current = false;
             // Defensive: keep only a short, plain-text-ish slice to display.
             // The server already validates the username at registration but
             // this prevents any future regression from spilling into the UI.
@@ -116,12 +118,23 @@ export default function Chat() {
             setPartnerId(null);
             if (remoteVideo.current) remoteVideo.current.srcObject = null;
             currentCall.current?.close();
+            // If *we* stopped the conversation, do NOT restart matchmaking.
+            // Otherwise (partner left / partner stopped / disconnect), keep matching.
+            if (stopInitiatedRef.current) {
+                stopInitiatedRef.current = false;
+                pendingFindRef.current = false;
+                statusRef.current = 'idle';
+                setStatus('idle');
+                return;
+            }
             findPartner();
         });
 
         socketRef.current.on('skipped', () => {
-            if (statusRef.current === 'waiting' || pendingFindRef.current) return;
-            setStatus('idle');
+            // cancel_search ack or server-side cleanup: always settle to idle
+            // unless we're already in a call.
+            pendingFindRef.current = false;
+            if (statusRef.current !== 'connected') setStatus('idle');
         });
     };
 
@@ -212,7 +225,6 @@ export default function Chat() {
     const findPartner = () => {
         if (!localStream.current) return alert('Caméra non disponible');
         pendingFindRef.current = true;
-        statusRef.current = 'waiting';
         setStatus('waiting');
         maybeStartSearch();
         // If peer/socket aren't ready yet, UI still shows "Recherche..." and auto-starts when ready.
@@ -220,6 +232,7 @@ export default function Chat() {
     };
 
     const skip = () => {
+        stopInitiatedRef.current = false;
         currentCall.current?.close();
         if (remoteVideo.current) remoteVideo.current.srcObject = null;
         setPartnerName('');
@@ -234,21 +247,26 @@ export default function Chat() {
         pendingFindRef.current = false;
         if (status === 'waiting') {
             socketRef.current.emit('cancel_search');
+            statusRef.current = 'idle';
+            setStatus('idle');
         } else if (status === 'connected') {
             // Stop pendant l'appel: on libère la paire côté serveur.
             // L'autre utilisateur continue (il reçoit partner_left et relance sa recherche),
             // mais celui qui appuie sur Stop revient en "idle" sans relancer le matchmaking.
+            stopInitiatedRef.current = true;
             socketRef.current.emit('skip');
             if (remoteVideo.current) remoteVideo.current.srcObject = null;
             setPartnerName('');
             setMessages([]);
             setPartnerId(null);
+            statusRef.current = 'idle';
             setStatus('idle');
             return;
         } else {
             socketRef.current.emit('skip');
         }
         if (remoteVideo.current) remoteVideo.current.srcObject = null;
+        statusRef.current = 'idle';
         setStatus('idle');
         setMessages([]);
         setPartnerName('');

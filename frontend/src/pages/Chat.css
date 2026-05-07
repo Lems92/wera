@@ -220,6 +220,8 @@
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.10);
     font-size: 20px;
+    line-height: 1;
+    padding: 0;
 }
 
 .ome-btn--icon.is-off {
@@ -230,15 +232,15 @@
     height: 52px;
     padding: 0 26px;
     border-radius: 999px;
-    background: var(--wera-yellow);
-    color: #111;
+    background: #2d7dff;
+    color: #fff;
     font-size: 15px;
     letter-spacing: 0.3px;
-    box-shadow: 0 6px 18px rgba(244, 231, 76, 0.35);
+    box-shadow: 0 6px 18px rgba(45, 125, 255, 0.35);
 }
 
 .ome-btn--next:active {
-    box-shadow: 0 2px 10px rgba(244, 231, 76, 0.25);
+    box-shadow: 0 2px 10px rgba(45, 125, 255, 0.25);
 }
 
 .ome-btn--stop {

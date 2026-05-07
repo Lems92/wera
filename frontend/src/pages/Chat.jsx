@@ -393,7 +393,7 @@ export default function Chat() {
                     </button>
                     <button
                         type="button"
-                        className={`ome-btn ome-btn--icon${isCamOff ? ' is-off' : ''}`}
+                        className={`ome-btn ome-btn--icons${isCamOff ? ' is-off' : ''}`}
                         onClick={toggleCam}
                         aria-label="Caméra"
                     >

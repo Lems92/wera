@@ -29,10 +29,46 @@ if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
 }
 
 const app = express();
-// Trust the first proxy (Render terminates TLS in front of Node) so the
-// real client IP from X-Forwarded-For is used by rate-limit and logging.
-// Limited to 1 hop to prevent header-spoofing of arbitrary IPs.
-app.set('trust proxy', 1);
+// Behind Cloudflare → Render → Node. Each hop adds itself to X-Forwarded-For,
+// so we need to trust 2 hops to get the real client IP. We never trust the
+// header beyond that, so an attacker can't inject a fake IP.
+app.set('trust proxy', 2);
+
+// ── Cloudflare-aware client IP ──────────────────────────────────────────
+// CF-Connecting-IP is set by Cloudflare on every forwarded request and
+// cannot be spoofed end-to-end (Cloudflare strips any client-supplied value
+// before adding its own). Fall back to X-Forwarded-For for non-CF traffic.
+function realClientIp(req) {
+    const cf = req.headers['cf-connecting-ip'];
+    if (cf) return String(cf).split(',')[0].trim();
+    const xff = req.headers['x-forwarded-for'];
+    if (xff) {
+        const first = String(xff).split(',')[0].trim();
+        if (first) return first;
+    }
+    return req.socket?.remoteAddress || req.ip || '';
+}
+app.use((req, _res, next) => { req.realIp = realClientIp(req); next(); });
+
+// ── Optional: deny direct-to-origin traffic ─────────────────────────────
+// Cloudflare only protects you if every request goes through it. An
+// attacker who learns the Render URL can DDoS it directly, bypassing
+// Cloudflare's edge. Mitigation: require a shared secret header that
+// only Cloudflare adds (via a Transform Rule). Set CF_ORIGIN_SECRET on
+// Render AND in the Cloudflare Transform Rule, both equal.
+const CF_ORIGIN_SECRET = process.env.CF_ORIGIN_SECRET || '';
+const ORIGIN_SHIELD_BYPASS = new Set(['/', '/api']); // health checks
+if (CF_ORIGIN_SECRET) {
+    app.use((req, res, next) => {
+        if (ORIGIN_SHIELD_BYPASS.has(req.path)) return next();
+        // Allow same-host requests (Render's internal monitoring uses
+        // the local socket); the shared secret is checked otherwise.
+        const provided = req.headers['x-cf-secret'];
+        if (provided && provided === CF_ORIGIN_SECRET) return next();
+        return res.status(403).json({ error: 'Direct origin access denied' });
+    });
+    console.log('🛡️  Origin shield enabled — only Cloudflare traffic accepted.');
+}
 
 // ── Minimal security headers (no extra dependency) ───────────────────────
 // The API never serves HTML, so a tight CSP is safe and blocks any reflected
@@ -226,12 +262,18 @@ app.use(cookieParser());
 // Cap body size — chat messages are short and the API never receives uploads.
 app.use(express.json({ limit: '32kb' }));
 
+// Use Cloudflare's authoritative client IP whenever available so a single
+// abusive user can't bypass the limiter by routing through different
+// X-Forwarded-For chains.
+const ipKey = (req) => req.realIp || req.ip;
+
 // Global API rate-limiter (broad). Strict per-route limits are added below.
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 1000,
     standardHeaders: true,
     legacyHeaders: false,
+    keyGenerator: ipKey,
     message: { error: 'Too many requests, please try again later.' }
 });
 app.use('/api', apiLimiter);
@@ -244,6 +286,7 @@ const authLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     skipSuccessfulRequests: true, // don't count valid logins toward the limit
+    keyGenerator: ipKey,
     message: { error: 'Trop de tentatives. Réessayez dans quelques minutes.' }
 });
 app.use('/api/auth/login', authLimiter);

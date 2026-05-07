@@ -7,13 +7,14 @@ const auth = require('../middleware/authMiddleware');
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_REASON_LEN = 500;
 
-// Per-user rate limit: 10 reports / 10 min, keyed by JWT user id.
+// Per-user rate limit: 10 reports / 10 min. Keyed by JWT user id when
+// available, falling back to the Cloudflare-resolved client IP.
 const reportLimiter = rateLimit({
     windowMs: 10 * 60 * 1000,
     max: 10,
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req) => req.user?.id || req.ip,
+    keyGenerator: (req) => req.user?.id || req.realIp || req.ip,
     message: { error: 'Trop de signalements. Réessayez plus tard.' }
 });
 

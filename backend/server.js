@@ -8,7 +8,10 @@ const { Server } = require('socket.io');
 const { ExpressPeerServer } = require('peer');
 const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
+const cookie = require('cookie');
 const fs = require('fs');
+const path = require('path');
 
 const authRoutes = require('./routes/auth');
 const reportRoutes = require('./routes/reports');
@@ -65,22 +68,42 @@ if (IS_RENDER) {
     server = http.createServer(app);
 } else {
     console.log('🔐 Mode Local : Utilisation de HTTPS (Self-signed)');
-    // Générer un certificat auto-signé pour HTTPS avec l'IP réelle pour le téléphone
-    const IP_ADDRESS = '192.168.88.26';
-    const attrs = [{ name: 'commonName', value: IP_ADDRESS }];
-    const extensions = [{
-        name: 'subjectAltName',
-        altNames: [
-            { type: 2, value: 'localhost' },
-            { type: 7, ip: IP_ADDRESS },
-            { type: 7, ip: '127.0.0.1' }
-        ]
-    }];
-    const pems = selfsigned.generate(attrs, { days: 365, extensions });
-    server = https.createServer({
-        key: pems.private,
-        cert: pems.cert
-    }, app);
+    // Persist the self-signed cert across restarts. Regenerating it every
+    // boot meant a new fingerprint each time, so a phone that "trusted" the
+    // cert yesterday couldn't tell tomorrow's regenerated one from a MITM.
+    const CERT_DIR = path.join(__dirname, '.local-certs');
+    const KEY_PATH = path.join(CERT_DIR, 'key.pem');
+    const CERT_PATH = path.join(CERT_DIR, 'cert.pem');
+    let key, cert;
+    try {
+        key = fs.readFileSync(KEY_PATH, 'utf8');
+        cert = fs.readFileSync(CERT_PATH, 'utf8');
+        console.log('🔁 Certificat auto-signé réutilisé depuis .local-certs/');
+    } catch {
+        const IP_ADDRESS = process.env.LOCAL_IP || '192.168.88.26';
+        const attrs = [{ name: 'commonName', value: IP_ADDRESS }];
+        const extensions = [{
+            name: 'subjectAltName',
+            altNames: [
+                { type: 2, value: 'localhost' },
+                { type: 7, ip: IP_ADDRESS },
+                { type: 7, ip: '127.0.0.1' }
+            ]
+        }];
+        const pems = selfsigned.generate(attrs, { days: 365, extensions });
+        key = pems.private;
+        cert = pems.cert;
+        try {
+            fs.mkdirSync(CERT_DIR, { recursive: true });
+            // Restrict perms; on Windows the OS ignores chmod but it's harmless.
+            fs.writeFileSync(KEY_PATH, key, { mode: 0o600 });
+            fs.writeFileSync(CERT_PATH, cert, { mode: 0o644 });
+            console.log('🔐 Nouveau certificat auto-signé généré et persisté.');
+        } catch (err) {
+            console.warn('⚠️  Impossible de persister le certificat:', err.message);
+        }
+    }
+    server = https.createServer({ key, cert }, app);
 }
 
 function parseAllowedOrigins() {
@@ -135,10 +158,12 @@ const corsOptions = {
         // Don't surface a stack trace to the client.
         return cb(null, false);
     },
-    // Auth uses Bearer tokens (Authorization header), not cookies. Keeping
-    // credentials:false prevents CSRF via stolen cookies even if a malicious
-    // origin slips past the allowlist.
-    credentials: false,
+    // Auth now uses HttpOnly SameSite=None cookies (so the browser never
+    // exposes the JWT to JS). credentials:true is required to send those
+    // cookies cross-origin, and the strict origin allowlist above is what
+    // keeps CSRF off the table — combined with SameSite=Lax on same-site
+    // deployments and SameSite=None+Secure on cross-site.
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     maxAge: 600
 };
@@ -197,6 +222,7 @@ io.engine.on('connection_error', (err) => {
     });
 });
 app.use(cors(corsOptions));
+app.use(cookieParser());
 // Cap body size — chat messages are short and the API never receives uploads.
 app.use(express.json({ limit: '32kb' }));
 
@@ -263,9 +289,20 @@ function recentlyPaired(aId, bId) {
 }
 
 // ── Socket.IO authentication middleware ──────────────────────────────────
-// Requires a valid JWT in handshake.auth.token. Banned users are rejected.
+// Reads the JWT from the wera_token HttpOnly cookie sent during the
+// websocket/polling handshake. Falls back to handshake.auth.token (legacy
+// path / native clients). Banned users and tokens issued before
+// JWT_VALID_AFTER are rejected.
 io.use(async (socket, next) => {
-    const token = socket.handshake?.auth?.token;
+    let token = null;
+    const rawCookie = socket.handshake?.headers?.cookie;
+    if (rawCookie) {
+        try {
+            const parsed = cookie.parse(rawCookie);
+            if (parsed?.wera_token) token = parsed.wera_token;
+        } catch { /* ignore malformed cookie header */ }
+    }
+    if (!token) token = socket.handshake?.auth?.token || null;
     if (!token) return next(new Error('Auth required'));
 
     let decoded;
@@ -276,10 +313,15 @@ io.use(async (socket, next) => {
     }
     if (!decoded?.id) return next(new Error('Invalid token'));
 
+    // Global kill-switch: any token issued before this timestamp is dead.
+    const validAfter = Number(process.env.JWT_VALID_AFTER || 0);
+    if (validAfter && (decoded.iat || 0) < validAfter) {
+        return next(new Error('Token revoked'));
+    }
+
     try {
         if (await isBanned(decoded.id)) return next(new Error('Banned'));
     } catch (err) {
-        // Don't block legitimate users on a transient DB hiccup.
         console.warn('socket ban-check error:', err?.message || err);
     }
 

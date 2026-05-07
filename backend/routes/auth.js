@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const supabase = require('../config/supabase');
 const { OAuth2Client } = require('google-auth-library');
+const auth = require('../middleware/authMiddleware');
 
 // ── Constants ────────────────────────────────────────────────────────────
 const BCRYPT_ROUNDS = 12;
@@ -12,6 +13,32 @@ const MIN_PASSWORD = 8;
 const MAX_PASSWORD = 100;
 const MIN_AGE = 13;
 const MAX_AGE = 120;
+// 24h: short enough to limit damage from a stolen token. The frontend can
+// silently extend the session via /api/auth/refresh while the user is active.
+const TOKEN_TTL = '24h';
+const COOKIE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const IS_PROD = Boolean(process.env.RENDER) || process.env.NODE_ENV === 'production';
+
+// HttpOnly + Secure (in prod) + SameSite. SameSite=None is required for the
+// Vercel/Netlify-hosted frontend to send the cookie back cross-origin to
+// the Render API. SameSite=Lax otherwise (local dev where API and front
+// share the LAN).
+const COOKIE_OPTIONS = Object.freeze({
+    httpOnly: true,
+    secure: IS_PROD,
+    sameSite: IS_PROD ? 'none' : 'lax',
+    maxAge: COOKIE_MAX_AGE_MS,
+    path: '/'
+});
+
+function setAuthCookie(res, token) {
+    res.cookie('wera_token', token, COOKIE_OPTIONS);
+}
+
+function clearAuthCookie(res) {
+    // Match the original options so the browser actually deletes the cookie.
+    res.clearCookie('wera_token', { ...COOKIE_OPTIONS, maxAge: undefined });
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 function normalizeEmail(email) {
@@ -64,8 +91,17 @@ function signToken(user) {
     return jwt.sign(
         { id: user.id, username: user.username },
         process.env.JWT_SECRET,
-        { expiresIn: '7d' }
+        { expiresIn: TOKEN_TTL }
     );
+}
+
+function loginResponse(res, user) {
+    const token = signToken(user);
+    setAuthCookie(res, token);
+    // Also return the token in the JSON body for backwards compatibility
+    // and native clients. Browser code SHOULD ignore this and rely on the
+    // HttpOnly cookie.
+    return res.json({ token, user: { id: user.id, username: user.username } });
 }
 
 // ── Inscription ──────────────────────────────────────────────────────────
@@ -119,7 +155,7 @@ router.post('/register', async (req, res) => {
             return res.status(409).json({ error: 'Compte indisponible' });
         }
 
-        res.json({ token: signToken(data), user: { id: data.id, username: data.username } });
+        return loginResponse(res, data);
     } catch (err) {
         console.error('register error:', err?.message || err);
         res.status(500).json({ error: 'Erreur serveur' });
@@ -157,7 +193,7 @@ router.post('/login', async (req, res) => {
             return res.status(403).json({ error: 'Compte banni' });
         }
 
-        res.json({ token: signToken(user), user: { id: user.id, username: user.username } });
+        return loginResponse(res, user);
     } catch (err) {
         console.error('login error:', err?.message || err);
         res.status(500).json({ error: 'Erreur serveur' });
@@ -224,11 +260,37 @@ router.post('/google', async (req, res) => {
 
         if (user.is_banned) return res.status(403).json({ error: 'Compte banni' });
 
-        res.json({ token: signToken(user), user: { id: user.id, username: user.username } });
+        return loginResponse(res, user);
     } catch (err) {
         console.error('google login error:', err?.message || err);
         res.status(400).json({ error: 'Token Google invalide' });
     }
+});
+
+// ── Session helpers ──────────────────────────────────────────────────────
+
+// Returns the current user's profile via the cookie/header. The frontend
+// calls this on mount to restore the session without ever touching the
+// JWT itself in JS.
+router.get('/me', auth, async (req, res) => {
+    res.json({ user: { id: req.user.id, username: req.user.username } });
+});
+
+// Issues a fresh token for a still-valid session. Lets the SPA extend
+// the 24h window silently while the user is active. Banned users and
+// revoked tokens are blocked by the auth middleware.
+router.post('/refresh', auth, async (req, res) => {
+    const token = signToken({ id: req.user.id, username: req.user.username });
+    setAuthCookie(res, token);
+    res.json({ token, user: { id: req.user.id, username: req.user.username } });
+});
+
+// Clear the cookie. Stateless logout — combined with /api/auth/refresh's
+// short TTL this gives reasonable revocation. For a global panic-button,
+// set the JWT_VALID_AFTER env var to the current Unix-seconds timestamp.
+router.post('/logout', (_req, res) => {
+    clearAuthCookie(res);
+    res.json({ ok: true });
 });
 
 module.exports = router;

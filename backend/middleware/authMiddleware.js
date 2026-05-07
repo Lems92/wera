@@ -17,7 +17,6 @@ async function isBanned(userId) {
         .eq('id', userId)
         .single();
 
-    // Fail closed on DB errors for safety, but don't lock everyone out — log it.
     if (error) {
         console.warn('isBanned() DB error:', error.message);
         return false;
@@ -27,9 +26,17 @@ async function isBanned(userId) {
     return banned;
 }
 
-module.exports = async function auth(req, res, next) {
+function readToken(req) {
+    // Prefer the HttpOnly cookie (browser flow). Fall back to the
+    // Authorization header for native / programmatic clients.
+    const cookieToken = req.cookies?.wera_token;
+    if (cookieToken) return cookieToken;
     const header = req.headers.authorization || '';
-    const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    return header.startsWith('Bearer ') ? header.slice(7) : null;
+}
+
+module.exports = async function auth(req, res, next) {
+    const token = readToken(req);
     if (!token) return res.status(401).json({ error: 'Non autorisé' });
 
     let decoded;
@@ -41,12 +48,22 @@ module.exports = async function auth(req, res, next) {
 
     if (!decoded?.id) return res.status(401).json({ error: 'Token invalide' });
 
+    // Global kill-switch — any token issued before this Unix-seconds timestamp
+    // is rejected. Lets ops invalidate every issued token at once after a
+    // suspected key leak by setting JWT_VALID_AFTER=<now>.
+    const validAfter = Number(process.env.JWT_VALID_AFTER || 0);
+    if (validAfter && (decoded.iat || 0) < validAfter) {
+        return res.status(401).json({ error: 'Token révoqué' });
+    }
+
     if (await isBanned(decoded.id)) {
         return res.status(403).json({ error: 'Compte banni' });
     }
 
     req.user = decoded;
+    req.token = token;
     next();
 };
 
 module.exports.isBanned = isBanned;
+module.exports.readToken = readToken;

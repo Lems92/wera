@@ -217,12 +217,15 @@
 .ome-btn--icon {
     width: 48px;
     height: 48px;
-    padding-bottom: 5px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.10);
     font-size: 20px;
     line-height: 1;
     padding: 0;
+}
+
+.ome-btn--cam {
+    padding-bottom: 5px;
 }
 
 .ome-btn--icon.is-off {

@@ -9,6 +9,8 @@ export default function Navbar() {
     const location = useLocation();
     const isHome = location.pathname === '/';
     const [open, setOpen] = useState(false);
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const userMenuRef = useRef(null);
 
     // Close menu when route changes
     useEffect(() => {
@@ -31,13 +33,37 @@ export default function Navbar() {
         return () => window.removeEventListener('keydown', onKey);
     }, [open]);
 
+    // Close user dropdown on outside click / Escape
+    useEffect(() => {
+        if (!userMenuOpen) return;
+        const onDown = (e) => {
+            const el = userMenuRef.current;
+            if (!el) return;
+            if (el.contains(e.target)) return;
+            setUserMenuOpen(false);
+        };
+        const onKey = (e) => {
+            if (e.key === 'Escape') setUserMenuOpen(false);
+        };
+        document.addEventListener('mousedown', onDown);
+        document.addEventListener('touchstart', onDown, { passive: true });
+        window.addEventListener('keydown', onKey);
+        return () => {
+            document.removeEventListener('mousedown', onDown);
+            document.removeEventListener('touchstart', onDown);
+            window.removeEventListener('keydown', onKey);
+        };
+    }, [userMenuOpen]);
+
     const handleLogout = () => {
         logout();
         setOpen(false);
+        setUserMenuOpen(false);
         navigate('/');
     };
 
     const close = () => setOpen(false);
+    const initials = (user?.username?.[0]?.toUpperCase() || '?');
 
     return (
         <>
@@ -52,17 +78,43 @@ export default function Navbar() {
                             <Link className="wera-navbar__link" to="/register">Nouveau compte</Link>
                         </>
                     ) : (
-                        <span className="wera-navbar__link">Salut, {user.username}</span>
+                        <div className="wera-userMenu" ref={userMenuRef}>
+                            <button
+                                type="button"
+                                className="wera-userMenu__trigger"
+                                onClick={() => setUserMenuOpen(v => !v)}
+                                aria-label="Menu utilisateur"
+                                aria-haspopup="menu"
+                                aria-expanded={userMenuOpen}
+                            >
+                                <span className="wera-userMenu__avatar" aria-hidden="true">{initials}</span>
+                            </button>
+
+                            <div className={`wera-userMenu__dropdown${userMenuOpen ? ' is-open' : ''}`} role="menu" aria-hidden={!userMenuOpen}>
+                                <button
+                                    type="button"
+                                    className="wera-userMenu__item"
+                                    onClick={() => { setUserMenuOpen(false); navigate('/profile'); }}
+                                    role="menuitem"
+                                >
+                                    Profil
+                                </button>
+                                <button
+                                    type="button"
+                                    className="wera-userMenu__item wera-userMenu__item--danger"
+                                    onClick={handleLogout}
+                                    role="menuitem"
+                                >
+                                    Déconnexion
+                                </button>
+                            </div>
+                        </div>
                     )}
 
                     <Link className="wera-navbar__link" to="/about">A Propos</Link>
                     <Link className="wera-navbar__link" to="/contact">Contact</Link>
 
-                    {user && (
-                        <button className="wera-navbar__button" onClick={handleLogout}>
-                            Déconnexion
-                        </button>
-                    )}
+                    {/* Logout moved into avatar dropdown on desktop */}
                 </nav>
 
                 {/* Burger button (mobile only) */}

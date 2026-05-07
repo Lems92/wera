@@ -119,6 +119,91 @@
   font-size: 15px;
 }
 
+/* ── Desktop avatar dropdown ─────────────────────────────── */
+.wera-userMenu {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.wera-userMenu__trigger {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wera-userMenu__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--yellow, #FFE000);
+  color: #111;
+  font-weight: 800;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 0, 0, 0.10);
+}
+
+.wera-userMenu__dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 180px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+  padding: 8px;
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: opacity 140ms ease, transform 140ms ease;
+  z-index: 1200;
+}
+
+.wera-userMenu__dropdown.is-open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.wera-userMenu__item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  font-weight: 600;
+  color: #111;
+  font-family: inherit;
+  transition: background 120ms ease;
+}
+
+.wera-userMenu__item:hover,
+.wera-userMenu__item:active {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.wera-userMenu__item--danger {
+  color: #e00;
+}
+
+.wera-userMenu__item--danger:hover,
+.wera-userMenu__item--danger:active {
+  background: rgba(238, 0, 0, 0.08);
+}
+
 /* ── Burger button (hidden on desktop) ──────────────────── */
 .wera-burger {
   display: none;

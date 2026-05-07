@@ -7,13 +7,42 @@ const selfsigned = require('selfsigned');
 const { Server } = require('socket.io');
 const { ExpressPeerServer } = require('peer');
 const rateLimit = require('express-rate-limit');
+const jwt = require('jsonwebtoken');
 const fs = require('fs');
 
 const authRoutes = require('./routes/auth');
 const reportRoutes = require('./routes/reports');
 const userRoutes = require('./routes/users');
+const { isBanned } = require('./middleware/authMiddleware');
+
+// ── Boot-time security checks ────────────────────────────────────────────
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+    console.error('❌ JWT_SECRET must be defined and at least 32 characters long.');
+    process.exit(1);
+}
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
+    console.error('❌ SUPABASE_URL and SUPABASE_KEY must be defined.');
+    process.exit(1);
+}
 
 const app = express();
+// Trust the first proxy (Render terminates TLS in front of Node) so the
+// real client IP from X-Forwarded-For is used by rate-limit and logging.
+// Limited to 1 hop to prevent header-spoofing of arbitrary IPs.
+app.set('trust proxy', 1);
+
+// ── Minimal security headers (no extra dependency) ───────────────────────
+app.use((_req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=()');
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
+        res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    }
+    next();
+});
 
 // Configuration du serveur : HTTP pour Render (production), HTTPS local pour le mobile
 // Render sets RENDER in the runtime environment; don't rely on a specific string value.
@@ -64,52 +93,43 @@ function parseAllowedOrigins() {
 }
 
 const ALLOWED_ORIGINS = parseAllowedOrigins();
-const HAS_EXPLICIT_ALLOWED_ORIGINS = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || '').trim().length > 0;
 
 function isOriginAllowed(origin) {
     if (!origin) return true; // non-browser requests (no Origin header)
-    if (ALLOWED_ORIGINS.includes('*')) return true;
     if (ALLOWED_ORIGINS.includes(origin)) return true;
 
-    // If you didn't configure FRONTEND_URL(S) on Render, avoid mysterious 400s from Socket.IO/CORS.
-    // Accept any HTTPS origin in that case (you can lock it down by setting FRONTEND_URLS).
-    if (IS_RENDER && !HAS_EXPLICIT_ALLOWED_ORIGINS) {
+    // Static allowlist of known Wera frontends. We deliberately do NOT fall
+    // back to "any HTTPS origin" — that would make CSRF trivially possible
+    // for any logged-in user once another flaw allows credentialed requests.
+    if (IS_RENDER) {
         try {
-            const { protocol } = new URL(origin);
-            return protocol === 'https:';
+            const { hostname, protocol } = new URL(origin);
+            if (protocol !== 'https:') return false;
+            const ok = hostname === 'wera.mg' ||
+                       hostname === 'www.wera.mg' ||
+                       hostname.endsWith('.onrender.com') ||
+                       hostname.endsWith('.vercel.app') ||
+                       hostname.endsWith('.netlify.app');
+            return ok;
         } catch {
             return false;
         }
     }
-
-    // Production-friendly allowlist for common hosted frontends when env isn't set.
-    // (Keeps local dev strict while preventing "mystery 400" Socket.IO handshakes on Render.)
-    if (IS_RENDER) {
-        try {
-            const { hostname, protocol } = new URL(origin);
-            const isDomainAllowed = hostname.endsWith('.onrender.com') || 
-                                  hostname.endsWith('.vercel.app') || 
-                                  hostname.endsWith('.netlify.app') ||
-                                  hostname === 'wera.mg' ||
-                                  hostname === 'www.wera.mg';
-            if (protocol === 'https:' && isDomainAllowed) {
-                return true;
-            }
-        } catch {
-            // ignore invalid origins
-        }
-    }
-
     return false;
 }
 
 const corsOptions = {
     origin(origin, cb) {
         if (isOriginAllowed(origin)) return cb(null, true);
-        return cb(new Error(`CORS blocked for origin: ${origin}. Set FRONTEND_URLS to allow it.`));
+        // Don't surface a stack trace to the client.
+        return cb(null, false);
     },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+    // Auth uses Bearer tokens (Authorization header), not cookies. Keeping
+    // credentials:false prevents CSRF via stolen cookies even if a malicious
+    // origin slips past the allowlist.
+    credentials: false,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    maxAge: 600
 };
 
 const io = new Server(server, {
@@ -133,7 +153,8 @@ const io = new Server(server, {
 const peerServer = ExpressPeerServer(server, {
     path: '/',
     proxied: true,
-    debug: true
+    // debug logged peer IDs and IPs — disabled in production.
+    debug: !IS_RENDER
 });
 
 app.use('/peerjs', peerServer);
@@ -158,15 +179,31 @@ io.engine.on('connection_error', (err) => {
     });
 });
 app.use(cors(corsOptions));
-app.use(express.json());
+// Cap body size — chat messages are short and the API never receives uploads.
+app.use(express.json({ limit: '32kb' }));
 
-const limiter = rateLimit({ 
-    windowMs: 15 * 60 * 1000, 
-    max: 1000, // Increased for polling sockets if they hit express routes
-    message: 'Too many requests, please try again later.'
+// Global API rate-limiter (broad). Strict per-route limits are added below.
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 1000,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests, please try again later.' }
 });
-// Apply limiter only to API routes, avoiding Socket.IO and PeerJS internal routes if possible
-app.use('/api', limiter);
+app.use('/api', apiLimiter);
+
+// Strict limiter for credential-handling endpoints (login/register).
+// Mounted BEFORE the auth router so it actually intercepts the request.
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipSuccessfulRequests: true, // don't count valid logins toward the limit
+    message: { error: 'Trop de tentatives. Réessayez dans quelques minutes.' }
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);
@@ -216,13 +253,45 @@ function recentlyPaired(aId, bId) {
     return false;
 }
 
+// ── Socket.IO authentication middleware ──────────────────────────────────
+// Requires a valid JWT in handshake.auth.token. Banned users are rejected.
+io.use(async (socket, next) => {
+    const token = socket.handshake?.auth?.token;
+    if (!token) return next(new Error('Auth required'));
+
+    let decoded;
+    try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch {
+        return next(new Error('Invalid token'));
+    }
+    if (!decoded?.id) return next(new Error('Invalid token'));
+
+    try {
+        if (await isBanned(decoded.id)) return next(new Error('Banned'));
+    } catch (err) {
+        // Don't block legitimate users on a transient DB hiccup.
+        console.warn('socket ban-check error:', err?.message || err);
+    }
+
+    socket.data.userId = decoded.id;
+    socket.data.username = decoded.username; // authoritative; ignore client-supplied
+    next();
+});
+
+// ── Input-validation helpers ─────────────────────────────────────────────
+const PEERID_RE = /^[a-zA-Z0-9_-]{8,64}$/;
+const MAX_MSG_LEN = 1000;
+
 io.on('connection', (socket) => {
-    console.log('✅ Connecté:', socket.id);
+    console.log('✅ Connecté:', socket.id, 'user:', socket.data.userId);
 
     // L'utilisateur cherche un partenaire
-    socket.on('find_partner', ({ peerId, username }) => {
+    socket.on('find_partner', (payload) => {
+        const peerId = String(payload?.peerId || '').trim();
+        if (!PEERID_RE.test(peerId)) return; // silently drop malformed payloads
         socket.data.peerId = peerId;
-        socket.data.username = username;
+        // username comes from the verified JWT, not from the client (set in io.use)
 
         // If already paired, ignore.
         if (activePairs.has(socket.id)) return;
@@ -262,16 +331,19 @@ io.on('connection', (socket) => {
             activePairs.set(socket.id, partner.id);
             activePairs.set(partner.id, socket.id);
 
-            // Notifie les deux : qui appelle, qui répond
+            // Notifie les deux : qui appelle, qui répond.
+            // partnerUserId = real DB id (UUID), used by /reports.
             socket.emit('partner_found', {
                 partnerPeerId: partner.data.peerId,
                 partnerUsername: partner.data.username,
-                initiator: false   // socket reçoit l'appel
+                partnerUserId: partner.data.userId,
+                initiator: false
             });
             partner.emit('partner_found', {
                 partnerPeerId: socket.data.peerId,
                 partnerUsername: socket.data.username,
-                initiator: true    // partner initie l'appel
+                partnerUserId: socket.data.userId,
+                initiator: true
             });
 
             console.log(`🔗 Paire: ${socket.id} <-> ${partner.id}`);
@@ -282,16 +354,21 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Message texte
+    // Message texte. Validate type + length + that the sender is actually
+    // paired — drop everything else silently.
     socket.on('send_message', (message) => {
+        if (typeof message !== 'string') return;
+        const text = message.trim();
+        if (!text || text.length > MAX_MSG_LEN) return;
+
         const partnerId = activePairs.get(socket.id);
-        if (partnerId) {
-            io.to(partnerId).emit('receive_message', {
-                text: message,
-                from: socket.data.username,
-                time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-            });
-        }
+        if (!partnerId) return;
+
+        io.to(partnerId).emit('receive_message', {
+            text,
+            from: socket.data.username,
+            time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+        });
     });
 
     // Passer au suivant — the client immediately re-emits 'find_partner',

@@ -8,7 +8,7 @@ import { API_URL, SOCKET_URL } from '../config';
 import './Chat.css';
 
 export default function Chat() {
-    const { user, token } = useAuth();
+    const { user, token, loading } = useAuth();
     const navigate = useNavigate();
 
     const [status, setStatus] = useState('idle');
@@ -39,8 +39,9 @@ export default function Chat() {
     useEffect(() => { statusRef.current = status; }, [status]);
 
     useEffect(() => {
+        if (loading) return;
         if (!user) navigate('/login');
-    }, [user, navigate]);
+    }, [user, loading, navigate]);
 
     useEffect(() => {
         initSocket();

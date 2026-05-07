@@ -8,7 +8,10 @@ const { Server } = require('socket.io');
 const { ExpressPeerServer } = require('peer');
 const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
+const cookie = require('cookie');
 const fs = require('fs');
+const path = require('path');
 
 const authRoutes = require('./routes/auth');
 const reportRoutes = require('./routes/reports');
@@ -32,12 +35,23 @@ const app = express();
 app.set('trust proxy', 1);
 
 // ── Minimal security headers (no extra dependency) ───────────────────────
+// The API never serves HTML, so a tight CSP is safe and blocks any reflected
+// content from being interpreted as a page in case of mistakes.
+const API_CSP = [
+    "default-src 'none'",
+    "frame-ancestors 'none'",
+    "base-uri 'none'",
+    "form-action 'none'"
+].join('; ');
+
 app.use((_req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=()');
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    res.setHeader('Cross-Origin-Resource-Policy', 'same-site');
+    res.setHeader('Content-Security-Policy', API_CSP);
     if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
         res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     }
@@ -54,22 +68,42 @@ if (IS_RENDER) {
     server = http.createServer(app);
 } else {
     console.log('🔐 Mode Local : Utilisation de HTTPS (Self-signed)');
-    // Générer un certificat auto-signé pour HTTPS avec l'IP réelle pour le téléphone
-    const IP_ADDRESS = '192.168.88.26';
-    const attrs = [{ name: 'commonName', value: IP_ADDRESS }];
-    const extensions = [{
-        name: 'subjectAltName',
-        altNames: [
-            { type: 2, value: 'localhost' },
-            { type: 7, ip: IP_ADDRESS },
-            { type: 7, ip: '127.0.0.1' }
-        ]
-    }];
-    const pems = selfsigned.generate(attrs, { days: 365, extensions });
-    server = https.createServer({
-        key: pems.private,
-        cert: pems.cert
-    }, app);
+    // Persist the self-signed cert across restarts. Regenerating it every
+    // boot meant a new fingerprint each time, so a phone that "trusted" the
+    // cert yesterday couldn't tell tomorrow's regenerated one from a MITM.
+    const CERT_DIR = path.join(__dirname, '.local-certs');
+    const KEY_PATH = path.join(CERT_DIR, 'key.pem');
+    const CERT_PATH = path.join(CERT_DIR, 'cert.pem');
+    let key, cert;
+    try {
+        key = fs.readFileSync(KEY_PATH, 'utf8');
+        cert = fs.readFileSync(CERT_PATH, 'utf8');
+        console.log('🔁 Certificat auto-signé réutilisé depuis .local-certs/');
+    } catch {
+        const IP_ADDRESS = process.env.LOCAL_IP || '192.168.88.26';
+        const attrs = [{ name: 'commonName', value: IP_ADDRESS }];
+        const extensions = [{
+            name: 'subjectAltName',
+            altNames: [
+                { type: 2, value: 'localhost' },
+                { type: 7, ip: IP_ADDRESS },
+                { type: 7, ip: '127.0.0.1' }
+            ]
+        }];
+        const pems = selfsigned.generate(attrs, { days: 365, extensions });
+        key = pems.private;
+        cert = pems.cert;
+        try {
+            fs.mkdirSync(CERT_DIR, { recursive: true });
+            // Restrict perms; on Windows the OS ignores chmod but it's harmless.
+            fs.writeFileSync(KEY_PATH, key, { mode: 0o600 });
+            fs.writeFileSync(CERT_PATH, cert, { mode: 0o644 });
+            console.log('🔐 Nouveau certificat auto-signé généré et persisté.');
+        } catch (err) {
+            console.warn('⚠️  Impossible de persister le certificat:', err.message);
+        }
+    }
+    server = https.createServer({ key, cert }, app);
 }
 
 function parseAllowedOrigins() {
@@ -124,10 +158,12 @@ const corsOptions = {
         // Don't surface a stack trace to the client.
         return cb(null, false);
     },
-    // Auth uses Bearer tokens (Authorization header), not cookies. Keeping
-    // credentials:false prevents CSRF via stolen cookies even if a malicious
-    // origin slips past the allowlist.
-    credentials: false,
+    // Auth now uses HttpOnly SameSite=None cookies (so the browser never
+    // exposes the JWT to JS). credentials:true is required to send those
+    // cookies cross-origin, and the strict origin allowlist above is what
+    // keeps CSRF off the table — combined with SameSite=Lax on same-site
+    // deployments and SameSite=None+Secure on cross-site.
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     maxAge: 600
 };
@@ -154,31 +190,39 @@ const peerServer = ExpressPeerServer(server, {
     path: '/',
     proxied: true,
     // debug logged peer IDs and IPs — disabled in production.
-    debug: !IS_RENDER
+    debug: !IS_RENDER,
+    // Don't expose the full list of connected peer IDs via the discovery
+    // endpoint. Without this, anyone can GET /peerjs/peerjs/peers and scrape
+    // every active peer ID to call them out-of-band.
+    allow_discovery: false,
+    // Cap concurrent messages buffered server-side per client.
+    concurrent_limit: 5000
 });
 
 app.use('/peerjs', peerServer);
 
-peerServer.on('connection', (client) => {
-    console.log('🧩 Peer connected:', client.getId());
-});
-peerServer.on('disconnect', (client) => {
-    console.log('🧩 Peer disconnected:', client.getId());
-});
+// Don't log peer IDs in production — they're per-session identifiers but
+// were leaking to Render's stdout.
+if (!IS_RENDER) {
+    peerServer.on('connection', (client) => {
+        console.log('🧩 Peer connected:', client.getId());
+    });
+    peerServer.on('disconnect', (client) => {
+        console.log('🧩 Peer disconnected:', client.getId());
+    });
+}
 
 // Helpful diagnostics for Render logs when the Engine.IO handshake fails.
+// Origin is the only piece useful for CORS debugging — UA was unnecessary PII.
 io.engine.on('connection_error', (err) => {
-    // err: { req, code, message, context }
-    const origin = err?.req?.headers?.origin;
-    const ua = err?.req?.headers?.['user-agent'];
     console.log('❌ Engine.IO connection_error', {
         code: err.code,
         message: err.message,
-        origin,
-        ua
+        origin: err?.req?.headers?.origin
     });
 });
 app.use(cors(corsOptions));
+app.use(cookieParser());
 // Cap body size — chat messages are short and the API never receives uploads.
 app.use(express.json({ limit: '32kb' }));
 
@@ -213,19 +257,10 @@ app.get('/api', (req, res) => res.json({ status: 'ok', message: 'Wera API is acc
 app.get('/', (req, res) => res.json({ message: 'Wera API is running 🇲🇬' }));
 
 app.get('/api/check-location', async (req, res) => {
-    // No country restriction: always allow.
-    const forwardedFor = req.headers['x-forwarded-for'];
-    const ip = (Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor)
-        ?.split(',')[0]
-        ?.trim() || req.socket.remoteAddress;
-
-    try {
-        const response = await fetch(`http://ip-api.com/json/${ip}`);
-        const data = await response.json();
-        res.json({ allowed: true, country: data.country, countryCode: data.countryCode, ip });
-    } catch {
-        res.json({ allowed: true, ip });
-    }
+    // No country restriction: always allow. We expose neither the raw IP nor
+    // any third-party lookup result — the response is intentionally minimal
+    // to avoid leaking PII (the previous version echoed the client IP back).
+    res.json({ allowed: true });
 });
 
 // ─── Matchmaking ───────────────────────────────────────────
@@ -254,9 +289,20 @@ function recentlyPaired(aId, bId) {
 }
 
 // ── Socket.IO authentication middleware ──────────────────────────────────
-// Requires a valid JWT in handshake.auth.token. Banned users are rejected.
+// Reads the JWT from the wera_token HttpOnly cookie sent during the
+// websocket/polling handshake. Falls back to handshake.auth.token (legacy
+// path / native clients). Banned users and tokens issued before
+// JWT_VALID_AFTER are rejected.
 io.use(async (socket, next) => {
-    const token = socket.handshake?.auth?.token;
+    let token = null;
+    const rawCookie = socket.handshake?.headers?.cookie;
+    if (rawCookie) {
+        try {
+            const parsed = cookie.parse(rawCookie);
+            if (parsed?.wera_token) token = parsed.wera_token;
+        } catch { /* ignore malformed cookie header */ }
+    }
+    if (!token) token = socket.handshake?.auth?.token || null;
     if (!token) return next(new Error('Auth required'));
 
     let decoded;
@@ -267,10 +313,15 @@ io.use(async (socket, next) => {
     }
     if (!decoded?.id) return next(new Error('Invalid token'));
 
+    // Global kill-switch: any token issued before this timestamp is dead.
+    const validAfter = Number(process.env.JWT_VALID_AFTER || 0);
+    if (validAfter && (decoded.iat || 0) < validAfter) {
+        return next(new Error('Token revoked'));
+    }
+
     try {
         if (await isBanned(decoded.id)) return next(new Error('Banned'));
     } catch (err) {
-        // Don't block legitimate users on a transient DB hiccup.
         console.warn('socket ban-check error:', err?.message || err);
     }
 
@@ -284,7 +335,8 @@ const PEERID_RE = /^[a-zA-Z0-9_-]{8,64}$/;
 const MAX_MSG_LEN = 1000;
 
 io.on('connection', (socket) => {
-    console.log('✅ Connecté:', socket.id, 'user:', socket.data.userId);
+    // Don't log the user id in production logs.
+    if (!IS_RENDER) console.log('✅ Connecté:', socket.id, 'user:', socket.data.userId);
 
     // L'utilisateur cherche un partenaire
     socket.on('find_partner', (payload) => {
@@ -346,7 +398,7 @@ io.on('connection', (socket) => {
                 initiator: true
             });
 
-            console.log(`🔗 Paire: ${socket.id} <-> ${partner.id}`);
+            if (!IS_RENDER) console.log(`🔗 Paire: ${socket.id} <-> ${partner.id}`);
         } else {
             // Personne ne cherche → on attend
             waitingQueue.push(socket);
@@ -391,7 +443,7 @@ io.on('connection', (socket) => {
         // Clean up the anti-rematch trackers so we don't leak memory.
         lastPartner.delete(socket.id);
         lastPartnerAt.delete(socket.id);
-        console.log('❌ Déconnecté:', socket.id);
+        if (!IS_RENDER) console.log('❌ Déconnecté:', socket.id);
     });
 });
 

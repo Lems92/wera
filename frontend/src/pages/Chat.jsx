@@ -71,10 +71,12 @@ export default function Chat() {
     const initSocket = () => {
         socketRef.current = io(SOCKET_URL, {
             transports: ['polling', 'websocket'],
-            withCredentials: false,
-            // JWT auth is mandatory server-side now; without it the socket
-            // gets disconnected with "Auth required".
-            auth: { token },
+            // The wera_token HttpOnly cookie is sent during the polling
+            // handshake; the server's io.use middleware reads it from there.
+            // We still pass auth.token as a fallback for environments where
+            // a third-party cookie may be blocked.
+            withCredentials: true,
+            auth: token ? { token } : undefined,
             reconnection: true,
             reconnectionAttempts: 10,
             reconnectionDelay: 1000,
@@ -98,7 +100,11 @@ export default function Chat() {
 
         socketRef.current.on('partner_found', ({ partnerPeerId, partnerUsername, partnerUserId, initiator }) => {
             pendingFindRef.current = false;
-            setPartnerName(partnerUsername);
+            // Defensive: keep only a short, plain-text-ish slice to display.
+            // The server already validates the username at registration but
+            // this prevents any future regression from spilling into the UI.
+            const safeName = String(partnerUsername || '').replace(/[<>]/g, '').slice(0, 40);
+            setPartnerName(safeName);
             setPartnerId(partnerUserId || null);
             setStatus('connected');
             setMessages([]);

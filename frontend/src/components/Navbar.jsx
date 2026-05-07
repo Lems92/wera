@@ -42,7 +42,7 @@ export default function Navbar() {
     return (
         <>
             <header className={`wera-navbar ${isHome ? 'wera-navbar--home' : 'wera-navbar--app'}`}>
-                <Link to="/" className="wera-navbar__logo" onClick={close}><img src="/wera.png" alt="Wera" className="wera-navbar__logoImg" /></Link>
+                <Link to="/" className="wera-navbar__logo" onClick={close}><img src="/logo.png" alt="Wera" className="wera-navbar__logoImg" /></Link>
 
                 {/* Desktop links */}
                 <nav className="wera-navbar__links" aria-label="Primary">

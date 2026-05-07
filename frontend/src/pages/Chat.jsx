@@ -401,7 +401,7 @@ export default function Chat() {
                     </button>
                     <button
                         type="button"
-                        className="ome-btn ome-btn--next"
+                        className={`ome-btn ${status === 'idle' ? 'ome-btn--start' : 'ome-btn--next'}`}
                         onClick={status === 'idle' ? findPartner : skip}
                         aria-label="Suivant"
                     >

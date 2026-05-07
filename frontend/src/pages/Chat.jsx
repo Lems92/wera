@@ -19,8 +19,6 @@ export default function Chat() {
     const [isMuted, setIsMuted] = useState(false);
     const [isCamOff, setIsCamOff] = useState(false);
     const [waitingTooLong, setWaitingTooLong] = useState(false);
-    const [chatOpen, setChatOpen] = useState(false);
-    const [unread, setUnread] = useState(0);
     const [partnerId, setPartnerId] = useState(null);
 
     const socketRef = useRef(null);
@@ -35,11 +33,9 @@ export default function Chat() {
     const userRef = useRef(null);
     const waitingTimerRef = useRef(null);
     const statusRef = useRef('idle');
-    const chatOpenRef = useRef(false);
 
     useEffect(() => { userRef.current = user; }, [user]);
     useEffect(() => { statusRef.current = status; }, [status]);
-    useEffect(() => { chatOpenRef.current = chatOpen; }, [chatOpen]);
 
     useEffect(() => {
         if (!user) navigate('/login');
@@ -54,7 +50,7 @@ export default function Chat() {
 
     useEffect(() => {
         messagesEnd.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages, chatOpen]);
+    }, [messages]);
 
     useEffect(() => {
         if (status === 'waiting') {
@@ -108,14 +104,11 @@ export default function Chat() {
             setPartnerId(partnerUserId || null);
             setStatus('connected');
             setMessages([]);
-            setUnread(0);
-            setChatOpen(false);
             connectVideo(partnerPeerId, initiator);
         });
 
         socketRef.current.on('receive_message', (msg) => {
             setMessages(prev => [...prev, { ...msg, self: false }]);
-            if (!chatOpenRef.current) setUnread(u => u + 1);
         });
 
         socketRef.current.on('partner_left', () => {
@@ -232,7 +225,6 @@ export default function Chat() {
         setPartnerName('');
         setPartnerId(null);
         setMessages([]);
-        setUnread(0);
         socketRef.current.emit('skip');
         findPartner();
     };
@@ -243,14 +235,16 @@ export default function Chat() {
         if (status === 'waiting') {
             socketRef.current.emit('cancel_search');
         } else if (status === 'connected') {
-            // Stop pendant l'appel: on libère la paire puis on bascule vers un autre utilisateur
-            // déjà en recherche (équivalent "Next" auto).
+            // Stop pendant l'appel: on libère la paire côté serveur.
+            // L'autre utilisateur continue (il reçoit partner_left et relance sa recherche),
+            // mais celui qui appuie sur Stop revient en "idle" sans relancer le matchmaking.
             socketRef.current.emit('skip');
             if (remoteVideo.current) remoteVideo.current.srcObject = null;
             setPartnerName('');
             setMessages([]);
-            setUnread(0);
-            return findPartner();
+            setPartnerId(null);
+            setStatus('idle');
+            return;
         } else {
             socketRef.current.emit('skip');
         }
@@ -259,7 +253,6 @@ export default function Chat() {
         setMessages([]);
         setPartnerName('');
         setPartnerId(null);
-        setUnread(0);
     };
 
     const sendMessage = (e) => {
@@ -311,14 +304,6 @@ export default function Chat() {
         peerRef.current?.destroy();
     };
 
-    const toggleChat = () => {
-        setChatOpen(open => {
-            const next = !open;
-            if (next) setUnread(0);
-            return next;
-        });
-    };
-
     const remoteBadge = () => {
         if (status === 'connected') return null;
         if (status === 'waiting') {
@@ -330,107 +315,95 @@ export default function Chat() {
 
     return (
         <div className="ome-page">
-
-            {/* ── VIDÉO REMOTE (haut) ── */}
-            <section className="ome-remote">
-                <video ref={remoteVideo} autoPlay playsInline className="ome-video" />
-                <span className="ome-tag ome-tag--top">Stranger</span>
-                {remoteBadge() && (
-                    <div className="ome-overlay">
-                        <span className="ome-overlay__dot" />
-                        <span>{remoteBadge()}</span>
-                    </div>
-                )}
-                {status === 'connected' && (
-                    <button
-                        type="button"
-                        className="ome-report"
-                        onClick={reportUser}
-                        aria-label="Signaler"
-                    >
-                        🚩
-                    </button>
-                )}
-            </section>
-
-            {/* ── Ligne de séparation jaune ── */}
-            <div className="ome-divider" />
-
-            {/* ── VIDÉO LOCALE (bas) ── */}
-            <section className="ome-local">
-                <video
-                    ref={localVideo}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="ome-video ome-video--mirrored"
-                />
-                <span className="ome-tag ome-tag--bottom">You</span>
-                {isCamOff && <div className="ome-camoff">Caméra désactivée</div>}
-            </section>
-
-            {/* ── CONTRÔLES (overlay flottant) ── */}
-            <div className="ome-controls">
-                <button
-                    type="button"
-                    className={`ome-btn ome-btn--icon${isMuted ? ' is-off' : ''}`}
-                    onClick={toggleMute}
-                    aria-label="Micro"
-                >
-                    {isMuted ? '🔇' : '🎤'}
-                </button>
-                <button
-                    type="button"
-                    className={`ome-btn ome-btn--icon${isCamOff ? ' is-off' : ''}`}
-                    onClick={toggleCam}
-                    aria-label="Caméra"
-                >
-                    {isCamOff ? '📵' : '📷'}
-                </button>
-                <button
-                    type="button"
-                    className="ome-btn ome-btn--next"
-                    onClick={status === 'idle' ? findPartner : skip}
-                    aria-label="Suivant"
-                >
-                    {status === 'idle' ? 'Start' : 'Next'}
-                </button>
-                <button
-                    type="button"
-                    className="ome-btn ome-btn--stop"
-                    onClick={stop}
-                    aria-label="Stop"
-                >
-                    ✖
-                </button>
-            </div>
-
-            {/* ── BOUTON CHAT FLOTTANT ── */}
             <button
                 type="button"
-                className="ome-fab"
-                onClick={toggleChat}
-                aria-label="Ouvrir le chat"
+                className="ome-back"
+                onClick={() => navigate(-1)}
+                aria-label="Retour"
             >
-                💬
-                {unread > 0 && <span className="ome-fab__badge">{unread}</span>}
+                ← Retour
             </button>
 
-            {/* ── PANEL CHAT (slide depuis le bas) ── */}
-            <div className={`ome-chat${chatOpen ? ' is-open' : ''}`}>
-                <div className="ome-chat__handle" onClick={toggleChat}>
-                    <div className="ome-chat__grip" />
-                </div>
-                <header className="ome-chat__header">
-                    <span>{status === 'connected' ? `💬 ${partnerName || 'Stranger'}` : 'Chat'}</span>
+            <div className="ome-stage">
+                {/* ── VIDÉO REMOTE ── */}
+                <section className="ome-remote">
+                    <video ref={remoteVideo} autoPlay playsInline className="ome-video" />
+                    <span className="ome-tag ome-tag--top">Stranger</span>
+                    {remoteBadge() && (
+                        <div className="ome-overlay">
+                            <span className="ome-overlay__dot" />
+                            <span>{remoteBadge()}</span>
+                        </div>
+                    )}
+                    {status === 'connected' && (
+                        <button
+                            type="button"
+                            className="ome-report"
+                            onClick={reportUser}
+                            aria-label="Signaler"
+                        >
+                            🚩
+                        </button>
+                    )}
+                </section>
+
+                {/* ── Ligne de séparation jaune ── */}
+                <div className="ome-divider" />
+
+                {/* ── VIDÉO LOCALE ── */}
+                <section className="ome-local">
+                    <video
+                        ref={localVideo}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="ome-video ome-video--mirrored"
+                    />
+                    <span className="ome-tag ome-tag--bottom">You</span>
+                    {isCamOff && <div className="ome-camoff">Caméra désactivée</div>}
+                </section>
+
+                {/* ── CONTRÔLES (overlay flottant) ── */}
+                <div className="ome-controls">
                     <button
                         type="button"
-                        className="ome-chat__close"
-                        onClick={toggleChat}
-                        aria-label="Fermer"
+                        className={`ome-btn ome-btn--icon${isMuted ? ' is-off' : ''}`}
+                        onClick={toggleMute}
+                        aria-label="Micro"
                     >
-                        ✕
+                        {isMuted ? '🔇' : '🎤'}
                     </button>
+                    <button
+                        type="button"
+                        className={`ome-btn ome-btn--icon${isCamOff ? ' is-off' : ''}`}
+                        onClick={toggleCam}
+                        aria-label="Caméra"
+                    >
+                        {isCamOff ? '📵' : '📷'}
+                    </button>
+                    <button
+                        type="button"
+                        className="ome-btn ome-btn--next"
+                        onClick={status === 'idle' ? findPartner : skip}
+                        aria-label="Suivant"
+                    >
+                        {status === 'idle' ? 'Start' : 'Next'}
+                    </button>
+                    <button
+                        type="button"
+                        className="ome-btn ome-btn--stop"
+                        onClick={stop}
+                        aria-label="Stop"
+                    >
+                        ✖
+                    </button>
+                </div>
+            </div>
+
+            {/* ── CHAT FIXE EN BAS (desktop + mobile) ── */}
+            <section className="ome-chatFixed" aria-label="Chat">
+                <header className="ome-chat__header">
+                    <span>{status === 'connected' ? `💬 ${partnerName || 'Stranger'}` : 'Chat'}</span>
                 </header>
 
                 <div className="ome-chat__messages">
@@ -465,7 +438,7 @@ export default function Chat() {
                         ➤
                     </button>
                 </form>
-            </div>
+            </section>
 
         </div>
     );

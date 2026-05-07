@@ -98,7 +98,11 @@ export default function Chat() {
 
         socketRef.current.on('partner_found', ({ partnerPeerId, partnerUsername, partnerUserId, initiator }) => {
             pendingFindRef.current = false;
-            setPartnerName(partnerUsername);
+            // Defensive: keep only a short, plain-text-ish slice to display.
+            // The server already validates the username at registration but
+            // this prevents any future regression from spilling into the UI.
+            const safeName = String(partnerUsername || '').replace(/[<>]/g, '').slice(0, 40);
+            setPartnerName(safeName);
             setPartnerId(partnerUserId || null);
             setStatus('connected');
             setMessages([]);

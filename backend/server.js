@@ -32,12 +32,23 @@ const app = express();
 app.set('trust proxy', 1);
 
 // ── Minimal security headers (no extra dependency) ───────────────────────
+// The API never serves HTML, so a tight CSP is safe and blocks any reflected
+// content from being interpreted as a page in case of mistakes.
+const API_CSP = [
+    "default-src 'none'",
+    "frame-ancestors 'none'",
+    "base-uri 'none'",
+    "form-action 'none'"
+].join('; ');
+
 app.use((_req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=()');
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    res.setHeader('Cross-Origin-Resource-Policy', 'same-site');
+    res.setHeader('Content-Security-Policy', API_CSP);
     if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
         res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     }
@@ -154,28 +165,35 @@ const peerServer = ExpressPeerServer(server, {
     path: '/',
     proxied: true,
     // debug logged peer IDs and IPs — disabled in production.
-    debug: !IS_RENDER
+    debug: !IS_RENDER,
+    // Don't expose the full list of connected peer IDs via the discovery
+    // endpoint. Without this, anyone can GET /peerjs/peerjs/peers and scrape
+    // every active peer ID to call them out-of-band.
+    allow_discovery: false,
+    // Cap concurrent messages buffered server-side per client.
+    concurrent_limit: 5000
 });
 
 app.use('/peerjs', peerServer);
 
-peerServer.on('connection', (client) => {
-    console.log('🧩 Peer connected:', client.getId());
-});
-peerServer.on('disconnect', (client) => {
-    console.log('🧩 Peer disconnected:', client.getId());
-});
+// Don't log peer IDs in production — they're per-session identifiers but
+// were leaking to Render's stdout.
+if (!IS_RENDER) {
+    peerServer.on('connection', (client) => {
+        console.log('🧩 Peer connected:', client.getId());
+    });
+    peerServer.on('disconnect', (client) => {
+        console.log('🧩 Peer disconnected:', client.getId());
+    });
+}
 
 // Helpful diagnostics for Render logs when the Engine.IO handshake fails.
+// Origin is the only piece useful for CORS debugging — UA was unnecessary PII.
 io.engine.on('connection_error', (err) => {
-    // err: { req, code, message, context }
-    const origin = err?.req?.headers?.origin;
-    const ua = err?.req?.headers?.['user-agent'];
     console.log('❌ Engine.IO connection_error', {
         code: err.code,
         message: err.message,
-        origin,
-        ua
+        origin: err?.req?.headers?.origin
     });
 });
 app.use(cors(corsOptions));
@@ -213,19 +231,10 @@ app.get('/api', (req, res) => res.json({ status: 'ok', message: 'Wera API is acc
 app.get('/', (req, res) => res.json({ message: 'Wera API is running 🇲🇬' }));
 
 app.get('/api/check-location', async (req, res) => {
-    // No country restriction: always allow.
-    const forwardedFor = req.headers['x-forwarded-for'];
-    const ip = (Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor)
-        ?.split(',')[0]
-        ?.trim() || req.socket.remoteAddress;
-
-    try {
-        const response = await fetch(`http://ip-api.com/json/${ip}`);
-        const data = await response.json();
-        res.json({ allowed: true, country: data.country, countryCode: data.countryCode, ip });
-    } catch {
-        res.json({ allowed: true, ip });
-    }
+    // No country restriction: always allow. We expose neither the raw IP nor
+    // any third-party lookup result — the response is intentionally minimal
+    // to avoid leaking PII (the previous version echoed the client IP back).
+    res.json({ allowed: true });
 });
 
 // ─── Matchmaking ───────────────────────────────────────────
@@ -284,7 +293,8 @@ const PEERID_RE = /^[a-zA-Z0-9_-]{8,64}$/;
 const MAX_MSG_LEN = 1000;
 
 io.on('connection', (socket) => {
-    console.log('✅ Connecté:', socket.id, 'user:', socket.data.userId);
+    // Don't log the user id in production logs.
+    if (!IS_RENDER) console.log('✅ Connecté:', socket.id, 'user:', socket.data.userId);
 
     // L'utilisateur cherche un partenaire
     socket.on('find_partner', (payload) => {
@@ -346,7 +356,7 @@ io.on('connection', (socket) => {
                 initiator: true
             });
 
-            console.log(`🔗 Paire: ${socket.id} <-> ${partner.id}`);
+            if (!IS_RENDER) console.log(`🔗 Paire: ${socket.id} <-> ${partner.id}`);
         } else {
             // Personne ne cherche → on attend
             waitingQueue.push(socket);
@@ -391,7 +401,7 @@ io.on('connection', (socket) => {
         // Clean up the anti-rematch trackers so we don't leak memory.
         lastPartner.delete(socket.id);
         lastPartnerAt.delete(socket.id);
-        console.log('❌ Déconnecté:', socket.id);
+        if (!IS_RENDER) console.log('❌ Déconnecté:', socket.id);
     });
 });
 

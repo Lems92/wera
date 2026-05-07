@@ -21,6 +21,7 @@ export default function Chat() {
     const [waitingTooLong, setWaitingTooLong] = useState(false);
     const [chatOpen, setChatOpen] = useState(false);
     const [unread, setUnread] = useState(0);
+    const [partnerId, setPartnerId] = useState(null);
 
     const socketRef = useRef(null);
     const peerRef = useRef(null);
@@ -71,6 +72,9 @@ export default function Chat() {
         socketRef.current = io(SOCKET_URL, {
             transports: ['polling', 'websocket'],
             withCredentials: false,
+            // JWT auth is mandatory server-side now; without it the socket
+            // gets disconnected with "Auth required".
+            auth: { token },
             reconnection: true,
             reconnectionAttempts: 10,
             reconnectionDelay: 1000,
@@ -92,9 +96,10 @@ export default function Chat() {
             if (statusRef.current !== 'connected') setStatus('waiting');
         });
 
-        socketRef.current.on('partner_found', ({ partnerPeerId, partnerUsername, initiator }) => {
+        socketRef.current.on('partner_found', ({ partnerPeerId, partnerUsername, partnerUserId, initiator }) => {
             pendingFindRef.current = false;
             setPartnerName(partnerUsername);
+            setPartnerId(partnerUserId || null);
             setStatus('connected');
             setMessages([]);
             setUnread(0);
@@ -109,6 +114,7 @@ export default function Chat() {
 
         socketRef.current.on('partner_left', () => {
             setPartnerName('');
+            setPartnerId(null);
             if (remoteVideo.current) remoteVideo.current.srcObject = null;
             currentCall.current?.close();
             findPartner();
@@ -218,6 +224,7 @@ export default function Chat() {
         currentCall.current?.close();
         if (remoteVideo.current) remoteVideo.current.srcObject = null;
         setPartnerName('');
+        setPartnerId(null);
         setMessages([]);
         setUnread(0);
         socketRef.current.emit('skip');
@@ -245,6 +252,7 @@ export default function Chat() {
         setStatus('idle');
         setMessages([]);
         setPartnerName('');
+        setPartnerId(null);
         setUnread(0);
     };
 
@@ -276,10 +284,14 @@ export default function Chat() {
     };
 
     const reportUser = async () => {
+        if (!partnerId) {
+            alert('Impossible de signaler : utilisateur inconnu.');
+            return;
+        }
         if (!window.confirm('Signaler cet utilisateur ?')) return;
         try {
             await axios.post(`${API_URL}/reports`,
-                { reported_id: partnerName, reason: 'Comportement inapproprié' },
+                { reported_id: partnerId, reason: 'Comportement inapproprié' },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             alert('Signalement envoyé. Merci !');

@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { API_URL } from '../config';
 import './Home.css';
 
 export default function Home() {
@@ -10,7 +11,9 @@ export default function Home() {
     const [locationOk, setLocationOk] = useState(null);
 
     useEffect(() => {
-        axios.get(`${import.meta.env.VITE_API_URL}/api/check-location`)
+        // Use the validated API_URL constant rather than import.meta.env so a
+        // missing/typo'd env var doesn't silently fail open on the geo-check.
+        axios.get(`${API_URL}/check-location`)
             .then(res => setLocationOk(res.data.allowed))
             .catch(() => setLocationOk(true));
     }, []);

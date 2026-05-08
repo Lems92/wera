@@ -17,13 +17,17 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
 
     // On mount, ask the server who we are. If the cookie is valid we get
-    // a user back; otherwise we stay logged out.
+    // a user back; otherwise we stay logged out. We treat 401 as a normal
+    // "no session" outcome (validateStatus) so axios doesn't pollute the
+    // console with a red error every time a logged-out user opens the app.
     useEffect(() => {
         let cancelled = false;
         (async () => {
             try {
-                const res = await axios.get(`${API_URL}/auth/me`);
-                if (!cancelled) setUser(res.data?.user || null);
+                const res = await axios.get(`${API_URL}/auth/me`, {
+                    validateStatus: (s) => s === 200 || s === 401
+                });
+                if (!cancelled) setUser(res.status === 200 ? (res.data?.user || null) : null);
             } catch {
                 if (!cancelled) setUser(null);
             } finally {

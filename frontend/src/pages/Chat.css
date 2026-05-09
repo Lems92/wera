@@ -192,6 +192,13 @@
     background: rgba(255, 255, 255, 0.10);
     font-size: 20px;
 }
+.ome-btn--icons {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.10);
+    font-size: 20px;
+}
 
 .ome-btn--icon.is-off {
     background: var(--wera-danger);

@@ -56,18 +56,20 @@ app.use((req, _res, next) => { req.realIp = realClientIp(req); next(); });
 // Cloudflare's edge. Mitigation: require a shared secret header that
 // only Cloudflare adds (via a Transform Rule). Set CF_ORIGIN_SECRET on
 // Render AND in the Cloudflare Transform Rule, both equal.
+//
+// Header name is configurable because Cloudflare reserves the `x-cf-*`
+// prefix for its own internal headers. Default is x-origin-secret.
 const CF_ORIGIN_SECRET = process.env.CF_ORIGIN_SECRET || '';
+const CF_ORIGIN_HEADER = (process.env.CF_ORIGIN_HEADER || 'x-origin-secret').toLowerCase();
 const ORIGIN_SHIELD_BYPASS = new Set(['/', '/api']); // health checks
 if (CF_ORIGIN_SECRET) {
     app.use((req, res, next) => {
         if (ORIGIN_SHIELD_BYPASS.has(req.path)) return next();
-        // Allow same-host requests (Render's internal monitoring uses
-        // the local socket); the shared secret is checked otherwise.
-        const provided = req.headers['x-cf-secret'];
+        const provided = req.headers[CF_ORIGIN_HEADER];
         if (provided && provided === CF_ORIGIN_SECRET) return next();
         return res.status(403).json({ error: 'Direct origin access denied' });
     });
-    console.log('🛡️  Origin shield enabled — only Cloudflare traffic accepted.');
+    console.log(`🛡️  Origin shield enabled — header: ${CF_ORIGIN_HEADER}`);
 }
 
 // ── Minimal security headers (no extra dependency) ───────────────────────

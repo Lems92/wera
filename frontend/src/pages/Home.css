@@ -10,7 +10,7 @@
 
 .wera-landing .left {
   width: 50%;
-  background: #F4E74C;
+  background: #feef4c;
   padding: 140px 100px;
   position: relative;
 }
@@ -65,7 +65,7 @@
 .wera-landing .video-btn svg {
   width: 40px;
   height: 40px;
-  fill: #F4E74C;
+  fill: #feef4c;
 }
 
 @media (max-width: 900px) {

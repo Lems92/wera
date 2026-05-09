@@ -5,8 +5,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-    --wera-yellow: #F4E74C;
-    --wera-yellow-soft: #FFE000;
+    --wera-yellow: #feef4c;
+    --wera-yellow-soft: #feef4c;
     --wera-bg: #050507;
     --wera-bg-soft: #0d0d11;
     --wera-text: #fafafa;
@@ -30,6 +30,35 @@
     overflow: hidden;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Bouton retour (simple) ─────────────────────────────── */
+.ome-back {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 40;
+    height: 38px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: var(--wera-text);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.ome-back:active { transform: scale(0.98); }
+
+/* ── Zone vidéos (plein écran au-dessus du chat) ────────── */
+.ome-stage {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 /* ── Vidéos ─────────────────────────────────────────────── */
@@ -191,6 +220,12 @@
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.10);
     font-size: 20px;
+    line-height: 1;
+    padding: 0;
+}
+
+.ome-btn--cam {
+    padding-bottom: 5px;
 }
 .ome-btn--icons {
     width: 48px;
@@ -208,6 +243,21 @@
     height: 52px;
     padding: 0 26px;
     border-radius: 999px;
+    background: #2d7dff;
+    color: #fff;
+    font-size: 15px;
+    letter-spacing: 0.3px;
+    box-shadow: 0 6px 18px rgba(45, 125, 255, 0.35);
+}
+
+.ome-btn--next:active {
+    box-shadow: 0 2px 10px rgba(45, 125, 255, 0.25);
+}
+
+.ome-btn--start {
+    height: 52px;
+    padding: 0 26px;
+    border-radius: 999px;
     background: var(--wera-yellow);
     color: #111;
     font-size: 15px;
@@ -215,7 +265,7 @@
     box-shadow: 0 6px 18px rgba(244, 231, 76, 0.35);
 }
 
-.ome-btn--next:active {
+.ome-btn--start:active {
     box-shadow: 0 2px 10px rgba(244, 231, 76, 0.25);
 }
 
@@ -229,84 +279,18 @@
     box-shadow: 0 4px 14px rgba(255, 77, 79, 0.35);
 }
 
-/* ── FAB Chat ───────────────────────────────────────────── */
-.ome-fab {
-    position: absolute;
-    right: 16px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(15, 15, 18, 0.85);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    color: var(--wera-text);
-    font-size: 22px;
-    cursor: pointer;
-    z-index: 20;
-    box-shadow: var(--wera-shadow);
-    transition: transform 0.15s;
-}
-
-.ome-fab:active {
-    transform: scale(0.92);
-}
-
-.ome-fab__badge {
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 6px;
-    border-radius: 999px;
-    background: var(--wera-danger);
-    color: #fff;
-    font-size: 11px;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 0 0 2px var(--wera-bg);
-}
-
-/* ── Chat panel (slide-up) ──────────────────────────────── */
-.ome-chat {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 55%;
+/* ── Chat fixe en bas (non pop-up) ──────────────────────── */
+.ome-chatFixed {
+    flex: 0 0 auto;
+    height: clamp(220px, 32vh, 380px);
+    min-height: 200px;
     background: var(--wera-bg-soft);
     color: var(--wera-text);
-    border-top-left-radius: 22px;
-    border-top-right-radius: 22px;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
     box-shadow: 0 -16px 40px rgba(0, 0, 0, 0.55);
     display: flex;
     flex-direction: column;
-    transform: translateY(100%);
-    transition: transform 0.32s cubic-bezier(0.22, 0.9, 0.32, 1.1);
     z-index: 30;
-}
-
-.ome-chat.is-open {
-    transform: translateY(0);
-}
-
-.ome-chat__handle {
-    padding: 8px 0 4px;
-    display: flex;
-    justify-content: center;
-    cursor: pointer;
-}
-
-.ome-chat__grip {
-    width: 44px;
-    height: 4px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.18);
 }
 
 .ome-chat__header {
@@ -317,21 +301,6 @@
     font-size: 14px;
     font-weight: 600;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.ome-chat__close {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--wera-text);
-    font-size: 14px;
-    cursor: pointer;
-}
-
-.ome-chat__close:active {
-    transform: scale(0.92);
 }
 
 .ome-chat__messages {
@@ -460,21 +429,9 @@
 
 /* ── Desktop: côte à côte (remote | local) ───────────────── */
 @media (min-width: 900px) {
-    .ome-page {
-        flex-direction: row;
-    }
-
-    /* La séparation devient verticale */
-    .ome-divider {
-        width: 2px;
-        height: 100%;
-    }
-
-    .ome-remote,
-    .ome-local {
-        flex: 1 1 0;
-        min-width: 0;
-    }
+    .ome-stage { flex-direction: row; }
+    .ome-divider { width: 2px; height: 100%; }
+    .ome-remote, .ome-local { flex: 1 1 0; min-width: 0; }
 }
 
 @media (max-width: 520px) {

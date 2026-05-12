@@ -160,19 +160,31 @@ export default function Chat() {
         setStatus('waiting');
     };
 
-    const initPeer = () => {
+    const initPeer = async () => {
         const peerServerUrl = new URL(SOCKET_URL);
+
+        // Fetch fresh TURN credentials before opening the Peer.
+        // Without TURN, two mobile-data clients (both on carrier-grade NAT)
+        // can't establish a P2P connection — calls would just hang on
+        // "Connexion...". STUN-only is left as the fallback if the API
+        // is unreachable.
+        let iceServers = [
+            { urls: 'stun:stun.cloudflare.com:3478' },
+            { urls: 'stun:stun.l.google.com:19302' }
+        ];
+        try {
+            const res = await axios.get(`${API_URL}/turn/credentials`);
+            if (res.data?.iceServers?.length) iceServers = res.data.iceServers;
+        } catch (err) {
+            console.warn('TURN credentials unavailable, falling back to STUN only:', err?.message || err);
+        }
+
         const peer = new Peer(undefined, {
             host: peerServerUrl.hostname,
             port: peerServerUrl.port ? Number(peerServerUrl.port) : (peerServerUrl.protocol === 'https:' ? 443 : 80),
             secure: peerServerUrl.protocol === 'https:',
             path: '/peerjs',
-            config: {
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:global.stun.twilio.com:3478' }
-                ]
-            }
+            config: { iceServers }
         });
         peerRef.current = peer;
 

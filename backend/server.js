@@ -16,6 +16,7 @@ const path = require('path');
 const authRoutes = require('./routes/auth');
 const reportRoutes = require('./routes/reports');
 const userRoutes = require('./routes/users');
+const turnRoutes = require('./routes/turn');
 const { isBanned } = require('./middleware/authMiddleware');
 
 // ── Boot-time security checks ────────────────────────────────────────────
@@ -297,6 +298,7 @@ app.use('/api/auth/register', authLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/turn', turnRoutes);
 
 app.get('/api', (req, res) => res.json({ status: 'ok', message: 'Wera API is accessible' }));
 app.get('/', (req, res) => res.json({ message: 'Wera API is running 🇲🇬' }));

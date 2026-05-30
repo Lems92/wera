@@ -34,6 +34,7 @@ export default function Chat() {
     const waitingTimerRef = useRef(null);
     const statusRef = useRef('idle');
     const stopInitiatedRef = useRef(false);
+    const initedRef = useRef(false);
 
     useEffect(() => { userRef.current = user; }, [user]);
     useEffect(() => { statusRef.current = status; }, [status]);
@@ -42,13 +43,6 @@ export default function Chat() {
         if (loading) return;
         if (!user) navigate('/login');
     }, [user, loading, navigate]);
-
-    useEffect(() => {
-        initSocket();
-        startCamera();
-        initPeer();
-        return () => cleanup();
-    }, []);
 
     useEffect(() => {
         messagesEnd.current?.scrollIntoView({ behavior: 'smooth' });
@@ -68,7 +62,16 @@ export default function Chat() {
 
     const initSocket = () => {
         socketRef.current = io(SOCKET_URL, {
-            transports: ['polling', 'websocket'],
+            // Polling only — no WebSocket upgrade. Behind Cloudflare + Render's
+            // free tier, on mobile data, the polling→websocket upgrade probe is
+            // fragile: a failed/dropped upgrade force-closes the session, which
+            // shows up as "WebSocket is closed before the connection is
+            // established" + a 400 on the next poll, then an endless reconnect
+            // loop. Long-polling is rock-solid through this stack and is plenty
+            // for matchmaking + text chat (the video itself is WebRTC/PeerJS,
+            // independent of this transport), so we skip the upgrade entirely.
+            transports: ['polling'],
+            upgrade: false,
             // The wera_token HttpOnly cookie is sent during the polling
             // handshake; the server's io.use middleware reads it from there.
             // We still pass auth.token as a fallback for environments where
@@ -76,7 +79,7 @@ export default function Chat() {
             withCredentials: true,
             auth: token ? { token } : undefined,
             reconnection: true,
-            reconnectionAttempts: 10,
+            reconnectionAttempts: Infinity,
             reconnectionDelay: 1000,
             reconnectionDelayMax: 5000,
             timeout: 60000
@@ -160,19 +163,31 @@ export default function Chat() {
         setStatus('waiting');
     };
 
-    const initPeer = () => {
+    const initPeer = async () => {
         const peerServerUrl = new URL(SOCKET_URL);
+
+        // Fetch fresh TURN credentials before opening the Peer.
+        // Without TURN, two mobile-data clients (both on carrier-grade NAT)
+        // can't establish a P2P connection — calls would just hang on
+        // "Connexion...". STUN-only is left as the fallback if the API
+        // is unreachable.
+        let iceServers = [
+            { urls: 'stun:stun.cloudflare.com:3478' },
+            { urls: 'stun:stun.l.google.com:19302' }
+        ];
+        try {
+            const res = await axios.get(`${API_URL}/turn/credentials`);
+            if (res.data?.iceServers?.length) iceServers = res.data.iceServers;
+        } catch (err) {
+            console.warn('TURN credentials unavailable, falling back to STUN only:', err?.message || err);
+        }
+
         const peer = new Peer(undefined, {
             host: peerServerUrl.hostname,
             port: peerServerUrl.port ? Number(peerServerUrl.port) : (peerServerUrl.protocol === 'https:' ? 443 : 80),
             secure: peerServerUrl.protocol === 'https:',
             path: '/peerjs',
-            config: {
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:global.stun.twilio.com:3478' }
-                ]
-            }
+            config: { iceServers }
         });
         peerRef.current = peer;
 
@@ -322,6 +337,23 @@ export default function Chat() {
         socketRef.current?.disconnect();
         peerRef.current?.destroy();
     };
+
+    // Bring everything up once auth has hydrated. Connecting during the loading
+    // window (token still null, cookie not yet confirmed) makes the server's
+    // io.use middleware force-close the handshake — which the browser surfaces
+    // as "WebSocket is closed before the connection is established" plus a 400
+    // on the next poll, then a reconnect loop. Declared after the helpers above
+    // so they're all defined by the time this effect runs.
+    useEffect(() => {
+        if (loading || !user) return;      // not ready / will redirect to /login
+        if (initedRef.current) return;     // init exactly once
+        initedRef.current = true;
+        initSocket();
+        startCamera();
+        initPeer();
+        return () => cleanup();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [loading, user]);
 
     const remoteBadge = () => {
         if (status === 'connected') return null;

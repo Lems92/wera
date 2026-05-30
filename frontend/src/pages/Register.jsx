@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../config';
+import { setupGoogleButton } from '../utils/googleSignIn';
 import './Register.css';
 
 function validatePassword(pw) {
@@ -34,58 +35,25 @@ export default function Register() {
     const passwordErrors = useMemo(() => validatePassword(form.password), [form.password]);
 
     useEffect(() => {
-        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-        if (!clientId) return;
-        if (!googleBtnRef.current) return;
-
-        let cancelled = false;
-        const tryInit = () => {
-            if (cancelled) return false;
-            if (!window.google?.accounts?.id) return false;
-
-            try {
-                window.google.accounts.id.initialize({
-                    client_id: clientId,
-                    callback: async (response) => {
-                        try {
-                            setError('');
-                            setSubmitting(true);
-                            const res = await axios.post(`${API_URL}/auth/google`, { credential: response.credential });
-                            login(res.data.user, res.data.token);
-                            navigate('/');
-                        } catch (err) {
-                            setError(err.response?.data?.error || 'Erreur Google');
-                        } finally {
-                            setSubmitting(false);
-                        }
-                    }
-                });
-                googleBtnRef.current.innerHTML = '';
-                window.google.accounts.id.renderButton(googleBtnRef.current, {
-                    theme: 'outline',
-                    size: 'large',
-                    shape: 'pill',
-                    width: 340,
-                    text: 'continue_with'
-                });
-                return true;
-            } catch {
-                return false;
+        const { mount, unmount } = setupGoogleButton({
+            buttonRef: googleBtnRef,
+            onCredential: async (credential) => {
+                if (!credential) return;
+                try {
+                    setError('');
+                    setSubmitting(true);
+                    const res = await axios.post(`${API_URL}/auth/google`, { credential });
+                    login(res.data.user, res.data.token);
+                    navigate('/');
+                } catch (err) {
+                    setError(err.response?.data?.error || 'Erreur Google');
+                } finally {
+                    setSubmitting(false);
+                }
             }
-        };
-
-        // Script loads async; retry briefly.
-        if (tryInit()) return () => { cancelled = true; };
-        const interval = setInterval(() => {
-            if (tryInit()) clearInterval(interval);
-        }, 250);
-        const timeout = setTimeout(() => clearInterval(interval), 5000);
-
-        return () => {
-            cancelled = true;
-            clearInterval(interval);
-            clearTimeout(timeout);
-        };
+        });
+        mount();
+        return unmount;
     }, [login, navigate]);
 
     const handleSubmit = async (e) => {

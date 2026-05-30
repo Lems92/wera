@@ -230,7 +230,10 @@ router.post('/google', async (req, res) => {
             .select('*')
             .eq('email', email)
             .maybeSingle();
-        if (findErr) return res.status(500).json({ error: 'Erreur serveur' });
+        if (findErr) {
+            console.error('google login: supabase select error:', findErr.message, findErr.details);
+            return res.status(500).json({ error: 'Erreur serveur' });
+        }
 
         let user = existing;
         if (!user) {

@@ -151,8 +151,21 @@ router.post('/register', async (req, res) => {
             .single();
 
         if (error) {
-            // Generic message — avoid leaking whether the email or username collided.
-            return res.status(409).json({ error: 'Compte indisponible' });
+            // Log everything server-side so we can debug; keep the response
+            // generic so we don't help account enumeration.
+            console.error('register: supabase insert error', {
+                code: error.code,
+                message: error.message,
+                details: error.details,
+                hint: error.hint
+            });
+            // PostgreSQL 23505 = unique_violation (email or username already taken).
+            // 23502 = not_null_violation. 23514 = check_violation. 42703 = undefined_column.
+            // 42P01 = undefined_table. PGRST204 = column not in schema (RLS or missing).
+            if (error.code === '23505') {
+                return res.status(409).json({ error: 'Email ou nom d\'utilisateur déjà utilisé' });
+            }
+            return res.status(500).json({ error: 'Erreur serveur', code: error.code });
         }
 
         return loginResponse(res, data);

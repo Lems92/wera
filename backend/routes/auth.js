@@ -165,17 +165,10 @@ router.post('/register', async (req, res) => {
             if (error.code === '23505') {
                 return res.status(409).json({ error: 'Email ou nom d\'utilisateur déjà utilisé' });
             }
-            // TEMP DEBUG (à retirer une fois le diagnostic posé) : renvoie
-            // l'erreur complète uniquement si le header de diagnostic
-            // correspond — la réponse publique reste générique.
-            if (req.headers['x-debug-key'] === 'wera-dbg-c93a1d-tmp') {
-                return res.status(500).json({
-                    error: 'Erreur serveur',
-                    code: error.code,
-                    message: error.message,
-                    details: error.details,
-                    hint: error.hint
-                });
+            // Empty code + "fetch failed" message = Supabase unreachable
+            // (paused/deleted project, DNS gone) rather than a SQL error.
+            if (!error.code && /fetch failed/i.test(error.message || '')) {
+                return res.status(503).json({ error: 'Service momentanément indisponible. Réessayez plus tard.' });
             }
             return res.status(500).json({ error: 'Erreur serveur', code: error.code });
         }
@@ -200,11 +193,20 @@ router.post('/login', async (req, res) => {
     }
 
     try {
-        const { data: user } = await supabase
+        const { data: user, error: dbErr } = await supabase
             .from('users')
             .select('id, username, password_hash, is_banned')
             .eq('email', email)
             .maybeSingle();
+
+        // Don't swallow DB failures: without this check, an unreachable
+        // Supabase (paused project, DNS down) made every login answer
+        // "Email ou mot de passe incorrect" — even for valid accounts —
+        // which sends users (and debugging) down the wrong path entirely.
+        if (dbErr) {
+            console.error('login: supabase error:', dbErr.message || dbErr);
+            return res.status(503).json({ error: 'Service momentanément indisponible. Réessayez plus tard.' });
+        }
 
         const dummyHash = '$2a$12$abcdefghijklmnopqrstuuMjPDx9LJjj9pUoFIvLWYJ8s5K1H1LOe';
         const ok = user

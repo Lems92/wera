@@ -7,21 +7,32 @@ const auth = require('../middleware/authMiddleware');
 // alone — it needs a TURN relay. This endpoint returns iceServers for
 // PeerJS / RTCPeerConnection to use.
 //
-// Three providers, picked in this order of preference:
+// Providers, picked in this order of preference:
 //
 //   1. Cloudflare Realtime TURN (1 TB/mo free, but requires a CC on file)
 //      env: CF_TURN_TOKEN_ID, CF_TURN_API_TOKEN
 //
-//   2. Metered.ca paid/free tier (50 GB/mo free, signup but no CC)
+//   2. Metered.ca free tier (50 GB/mo free, signup but no CC)
 //      env: METERED_TURN_DOMAIN (e.g. "wera.metered.live"),
 //           METERED_TURN_API_KEY
 //
-//   3. Open Relay Project — public TURN servers maintained by Metered,
-//      no signup, no card, no analytics. Fine to start with; swap to one
-//      of the above once traffic grows.
+//   3. Any provider handing out static credentials (ExpressTURN,
+//      self-hosted coturn, …):
+//      env: TURN_URLS       comma-separated, e.g.
+//                           "turn:relay.example.com:3478,turns:relay.example.com:443?transport=tcp"
+//           TURN_USERNAME, TURN_CREDENTIAL
 //
-// The frontend never sees long-lived secrets — only short-lived credentials
-// (or in the Open-Relay case, public ones that are useless on their own).
+// NOTE: the old anonymous "Open Relay Project" fallback
+// (openrelay.metered.ca + openrelayproject/openrelayproject) is GONE —
+// Metered retired it. Verified 2026-05 with a real TURN Allocate: port 443
+// refuses TCP outright and port 80 accepts TCP but never answers. Shipping
+// those endpoints only slowed ICE gathering while CGNAT↔CGNAT calls stayed
+// dead, so we no longer include them. With no provider configured we return
+// STUN-only and relayAvailable:false.
+//
+// The frontend never sees long-lived secrets from Cloudflare/Metered — only
+// short-lived credentials. Static TURN_* creds are by nature long-lived;
+// prefer providers 1/2 when possible.
 
 const TTL_SECONDS = 600; // 10 minutes for short-lived credentials.
 
@@ -32,25 +43,29 @@ const STUN_FALLBACK = [
     { urls: 'stun:stun.l.google.com:19302' }
 ];
 
-// Public TURN credentials shared by Metered's Open Relay Project.
-// Reference: https://www.metered.ca/tools/openrelay/
-const OPEN_RELAY_ICE = [
-    {
-        urls: 'turn:openrelay.metered.ca:80',
-        username: 'openrelayproject',
-        credential: 'openrelayproject'
-    },
-    {
-        urls: 'turn:openrelay.metered.ca:443',
-        username: 'openrelayproject',
-        credential: 'openrelayproject'
-    },
-    {
-        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-        username: 'openrelayproject',
-        credential: 'openrelayproject'
-    }
-];
+// Loud boot-time warning: without a TURN relay, two clients that are both
+// behind carrier-grade NAT (mobile-data ↔ mobile-data) cannot connect at all.
+if (!process.env.CF_TURN_TOKEN_ID && !process.env.METERED_TURN_DOMAIN && !process.env.TURN_URLS) {
+    console.warn(
+        '⚠️  TURN: aucun relais configuré (CF_TURN_*, METERED_TURN_* ou TURN_URLS). ' +
+        'Les appels mobile↔mobile (CGNAT des deux côtés) échoueront. ' +
+        'Compte gratuit sur metered.ca puis définir METERED_TURN_DOMAIN + METERED_TURN_API_KEY.'
+    );
+}
+
+function fromStaticEnv() {
+    const urls = (process.env.TURN_URLS || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+    const username = process.env.TURN_USERNAME;
+    const credential = process.env.TURN_CREDENTIAL;
+    if (!urls.length || !username || !credential) return null;
+    return {
+        provider: 'static',
+        iceServers: urls.map((u) => ({ urls: u, username, credential }))
+    };
+}
 
 async function fromCloudflare() {
     const tokenId = process.env.CF_TURN_TOKEN_ID;
@@ -114,23 +129,32 @@ router.get('/credentials', auth, async (req, res) => {
             });
         }
 
-        // Fallback: Open Relay Project (free, public, no auth).
+        const fixed = fromStaticEnv();
+        if (fixed) {
+            return res.json({
+                iceServers: [...STUN_FALLBACK, ...fixed.iceServers],
+                provider: fixed.provider,
+                ttl: TTL_SECONDS,
+                relayAvailable: true
+            });
+        }
+
+        // No relay configured: STUN only. Same-NAT-friendly networks (wifi,
+        // wifi↔mobile) still connect; CGNAT↔CGNAT will not.
         res.json({
-            iceServers: [...STUN_FALLBACK, ...OPEN_RELAY_ICE],
-            provider: 'openrelay',
+            iceServers: STUN_FALLBACK,
+            provider: 'stun-only',
             ttl: TTL_SECONDS,
-            relayAvailable: true,
-            notice: 'Using free public TURN. Reliability not guaranteed.'
+            relayAvailable: false,
+            notice: 'Aucun relais TURN configuré — les appels mobile↔mobile échoueront.'
         });
     } catch (err) {
         console.error('TURN credentials error:', err?.message || err);
-        // Even in the worst case, ship STUN + Open Relay so the app
-        // keeps a chance to connect.
         res.json({
-            iceServers: [...STUN_FALLBACK, ...OPEN_RELAY_ICE],
-            provider: 'openrelay-fallback',
+            iceServers: STUN_FALLBACK,
+            provider: 'stun-only',
             ttl: TTL_SECONDS,
-            relayAvailable: true
+            relayAvailable: false
         });
     }
 });

@@ -178,6 +178,14 @@ export default function Chat() {
         try {
             const res = await axios.get(`${API_URL}/turn/credentials`);
             if (res.data?.iceServers?.length) iceServers = res.data.iceServers;
+            if (res.data?.relayAvailable) {
+                console.info('TURN relay actif — provider:', res.data.provider);
+            } else {
+                console.warn(
+                    'Aucun relais TURN configuré (provider:', res.data?.provider,
+                    ') — les appels mobile↔mobile ne pourront pas s\'établir.'
+                );
+            }
         } catch (err) {
             console.warn('TURN credentials unavailable, falling back to STUN only:', err?.message || err);
         }

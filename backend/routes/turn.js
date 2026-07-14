@@ -94,16 +94,59 @@ async function fromCloudflare() {
 
 async function fromMetered() {
     const domain = process.env.METERED_TURN_DOMAIN;
-    const apiKey = process.env.METERED_TURN_API_KEY;
-    if (!domain || !apiKey) return null;
+    const key = process.env.METERED_TURN_API_KEY;
+    if (!domain || !key) return null;
 
-    const url = `https://${domain}/api/v1/turn/credentials?apiKey=${encodeURIComponent(apiKey)}`;
-    const res = await fetch(url);
-    if (!res.ok) {
-        console.warn('Metered TURN failed:', res.status, await res.text().catch(() => ''));
+    const FETCH_OPTS = { signal: AbortSignal.timeout(5000) };
+
+    // The env var accepts either of Metered's two key types:
+    //
+    //  Flow 1 — TURN "API Key" (shown on the TURN Servers page): one GET
+    //  returns the ready-made iceServers array.
+    const direct = await fetch(
+        `https://${domain}/api/v1/turn/credentials?apiKey=${encodeURIComponent(key)}`,
+        FETCH_OPTS
+    );
+    if (direct.ok) {
+        const iceServers = await direct.json(); // already in iceServers shape
+        return { provider: 'metered', iceServers };
+    }
+
+    //  Flow 2 — account "Secret Key" (Developers page): mint a short-lived
+    //  credential via the admin API, then list its ice servers with the
+    //  per-credential apiKey Metered returns. This is what makes the setup
+    //  work even when the user copied the Secret Key into
+    //  METERED_TURN_API_KEY (easy mistake — both live in the dashboard).
+    const mint = await fetch(
+        `https://${domain}/api/v1/turn/credential?secretKey=${encodeURIComponent(key)}`,
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ expiryInSeconds: TTL_SECONDS, label: 'wera' }),
+            signal: AbortSignal.timeout(5000)
+        }
+    );
+    if (!mint.ok) {
+        console.warn(
+            'Metered TURN failed — direct:', direct.status,
+            '| mint:', mint.status, await mint.text().catch(() => '')
+        );
         return null;
     }
-    const iceServers = await res.json(); // already in iceServers shape
+    const cred = await mint.json();
+    if (!cred?.apiKey) {
+        console.warn('Metered TURN: credential minted but no apiKey in response');
+        return null;
+    }
+    const list = await fetch(
+        `https://${domain}/api/v1/turn/credentials?apiKey=${encodeURIComponent(cred.apiKey)}`,
+        FETCH_OPTS
+    );
+    if (!list.ok) {
+        console.warn('Metered TURN failed (list after mint):', list.status);
+        return null;
+    }
+    const iceServers = await list.json();
     return { provider: 'metered', iceServers };
 }
 

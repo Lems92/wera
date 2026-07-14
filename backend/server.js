@@ -300,7 +300,13 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/turn', turnRoutes);
 
-app.get('/api', (req, res) => res.json({ status: 'ok', message: 'Wera API is accessible' }));
+// rev = deployed commit (Render injects RENDER_GIT_COMMIT). Lets us check
+// from outside which version is actually live.
+app.get('/api', (req, res) => res.json({
+    status: 'ok',
+    message: 'Wera API is accessible',
+    rev: (process.env.RENDER_GIT_COMMIT || 'dev').slice(0, 7)
+}));
 app.get('/', (req, res) => res.json({ message: 'Wera API is running 🇲🇬' }));
 
 app.get('/api/check-location', async (req, res) => {

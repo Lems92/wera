@@ -165,6 +165,18 @@ router.post('/register', async (req, res) => {
             if (error.code === '23505') {
                 return res.status(409).json({ error: 'Email ou nom d\'utilisateur déjà utilisé' });
             }
+            // TEMP DEBUG (à retirer une fois le diagnostic posé) : renvoie
+            // l'erreur complète uniquement si le header de diagnostic
+            // correspond — la réponse publique reste générique.
+            if (req.headers['x-debug-key'] === 'wera-dbg-c93a1d-tmp') {
+                return res.status(500).json({
+                    error: 'Erreur serveur',
+                    code: error.code,
+                    message: error.message,
+                    details: error.details,
+                    hint: error.hint
+                });
+            }
             return res.status(500).json({ error: 'Erreur serveur', code: error.code });
         }
 

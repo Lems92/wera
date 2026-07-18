@@ -1,22 +1,391 @@
-<!doctype html>
-<html lang="en">
-
+<!DOCTYPE html>
+<html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wera</title>
-  <link rel="icon" href="/wera.png" type="image/png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;500;600;700;800&display=swap"
-    rel="stylesheet">
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Wera · La communauté malgache en vidéo</title>
+<meta name="description" content="Wera — rencontre des Malgaches au hasard, en vidéo. Communauté vérifiée, bienveillante, vita malagasy. Lance un appel sur wera.mg." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Permanent+Marker&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+<style>
+  /* ===== HERO split : panneau jaune + photo ===== */
+  .hero { padding: 0; }
+  .hero .wrap { max-width: none; padding: 0; }
+  .hero-card { position: relative; display: grid; grid-template-columns: 1fr 1fr; border-radius: 0; overflow: visible; height: calc(100vh - 72px); min-height: 600px; box-shadow: none; }
+  .hero-card-inner { position: relative; display: contents; }
+  .hero-center-cta { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 14px; pointer-events: none; }
+  .hero-center-cta > * { pointer-events: auto; }
+  .hero-center-cta .ff-marker { font-family: 'Permanent Marker', cursive; font-size: 24px; color: #fff; transform: rotate(-4deg); text-shadow: 0 4px 16px rgba(0,0,0,.45); white-space: nowrap; }
+  .hero-center-cta .arrow { position: absolute; top: 14px; left: calc(50% - 142px); width: 96px; height: 76px; pointer-events: none; opacity: .92; }
+  .hero-center-cta .arrow path { stroke: #fff; }
+  .hero-center-vbtn { width: 104px; height: 104px; border-radius: 50%; background: var(--ink); display: flex; align-items: center; justify-content: center; box-shadow: 0 22px 50px -12px rgba(0,0,0,.65), 0 0 0 8px rgba(255,255,255,.18); transition: transform .15s; }
+  .hero-center-vbtn:hover { transform: scale(1.06); }
+  /* le bouton central est une affordance DESKTOP entre les deux panneaux : on le masque sur mobile (un seul CTA visible) */
+  .hero-left { background: var(--yellow); padding: clamp(28px, 4vw, 52px) clamp(28px, 5vw, 64px); display: flex; flex-direction: column; position: relative; justify-content: center; gap: 0; }
+  .hero-marker { margin-bottom: 14px; display: flex; align-items: flex-start; gap: 16px; }
+  .hero-marker .ff-marker { font-size: 26px; color: var(--ink); transform: rotate(-4deg); display: inline-block; white-space: nowrap; }
+  .hero-vbtn-wrap { position: relative; display: flex; justify-content: center; margin: 0 0 18px; }
+  .hero-arrow { position: absolute; top: -10px; left: calc(50% - 130px); width: 100px; height: 78px; pointer-events: none; }
+  .hero-vbtn { width: 72px; height: 72px; border-radius: 50%; background: var(--ink); display: flex; align-items: center; justify-content: center; box-shadow: 0 16px 32px -10px rgba(20,20,20,.55); transition: transform .15s; }
+  .hero-vbtn:hover { transform: scale(1.07); }
+  .hero-title { margin: 0; }
+  .hero-title .line { display: block; font-weight: 900; line-height: 1.08; letter-spacing: -.02em; font-size: clamp(32px, 4.2vw, 60px); color: var(--ink); }
+  .hero-title .hl { background: #fff; color: var(--ink); padding: 1px 12px; box-shadow: 4px 4px 0 rgba(20,20,20,.13); transform: rotate(-1deg); display: inline-block; margin: 3px 0; }
+  .hero-body { margin-top: 20px; font-size: 16px; font-weight: 600; line-height: 1.5; color: #2c2a16; max-width: 420px; }
+  .hero-body br { display: none; } /* on laisse la phrase couler */
+  .hero-left .hero-cta { align-self: flex-start; margin-top: 22px; }
+  .hero-photo { position: relative; background: #1a1c22; overflow: hidden; }
+  .hero-photo .img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+  .hero-photo::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.55) 100%); pointer-events: none; z-index: 1; }
+  .hero-badges { position: absolute; left: 16px; right: 16px; bottom: 16px; display: flex; gap: 8px; background: rgba(255,255,255,.92); backdrop-filter: blur(10px); border-radius: 18px; padding: 12px 12px; box-shadow: 0 10px 30px -10px rgba(0,0,0,.35); z-index: 2; }
+  .hbadge { flex: 1; display: flex; align-items: center; gap: 9px; color: var(--ink); }
+  .hbadge .hi { width: 34px; height: 34px; border-radius: 10px; background: rgba(250,220,52,.22); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .hbadge b { font-size: 13px; display: block; line-height: 1.15; }
+  .hbadge .hs { font-size: 11px; color: rgba(20,20,20,.6); line-height: 1.2; }
+  @media (max-width: 880px) {
+    .hero-card { grid-template-columns: 1fr; height: auto; min-height: 0; }
+    .hero-left { padding: 36px 22px 36px; }
+    .hero-photo { min-height: 56vh; }
+    /* on cache le gros bouton central : il ne sert que sur la jonction desktop */
+    .hero-center-cta { display: none; }
+  }
+  @media (max-width: 520px) {
+    .hero-marker { margin-bottom: 8px; }
+    .hero-marker .ff-marker { font-size: 22px; }
+    .hero-title .line { font-size: 34px; }
+    .hero-title .hl { padding: 1px 9px; box-shadow: 3px 3px 0 rgba(20,20,20,.13); }
+    .hero-body { font-size: 15px; margin-top: 16px; }
+    .hero-left .hero-cta { margin-top: 18px; padding: 13px 22px; font-size: 15px; }
+    .hero-photo { min-height: 360px; }
+    .hero-badges { left: 12px; right: 12px; bottom: 12px; padding: 10px; gap: 10px; }
+    .hero-badges .hbadge b { font-size: 12.5px; }
+    .hero-badges .hbadge .hs { font-size: 10.5px; }
+    /* en colonne étroite, on ne garde qu'une chip flottante pour laisser respirer la photo */
+    .call-chip.chip-2, .call-chip.chip-3 { display: none; }
+    .call-chip.chip-1 { top: 18px; left: 12px; }
+    .call-chip { padding: 7px 11px 7px 7px; }
+    .call-chip .av { width: 30px; height: 30px; font-size: 12px; }
+    .call-chip b { font-size: 12.5px; }
+    .call-chip em { font-size: 11px; }
+  }
+  @media (max-width: 380px) {
+    .hero-left { padding: 30px 18px 30px; }
+    .hero-title .line { font-size: 30px; }
+    .hero-marker .ff-marker { font-size: 20px; }
+    .hero-body { font-size: 14.5px; }
+    .hero-left .hero-cta { width: 100%; justify-content: center; }
+  }
+  /* hero photo : texture + vignettes d'appels flottantes */
+  .call-chip { position: absolute; z-index: 3; display: flex; align-items: center; gap: 9px; background: rgba(18,20,25,.62); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.12); padding: 8px 13px 8px 8px; border-radius: 40px; box-shadow: 0 12px 26px -12px rgba(0,0,0,.6); animation: floaty 5s ease-in-out infinite; }
+  .call-chip .av { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; color: #fff; }
+  .call-chip b { font-size: 13.5px; color: #fff; line-height: 1.15; display: block; white-space: nowrap; }
+  .call-chip .txt { display: block; }
+  .call-chip em { font-style: normal; font-size: 11.5px; color: rgba(255,255,255,.6); white-space: nowrap; }
+  .call-chip .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--green); margin-left: 4px; box-shadow: 0 0 0 0 rgba(47,177,107,.5); animation: pulse 1.8s ease-out infinite; }
+  .chip-1 { top: 16%; left: 8%; animation-delay: 0s; }
+  .chip-2 { top: 40%; right: 7%; animation-delay: .8s; }
+  .chip-3 { top: 64%; left: 12%; animation-delay: 1.6s; }
+  @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(47,177,107,.5); } 100% { box-shadow: 0 0 0 9px rgba(47,177,107,0); } }
+  @media (prefers-reduced-motion: reduce) { .call-chip { animation: none; } .call-chip .pulse { animation: none; } }
+  @media (max-width: 880px) { .chip-2 { right: 5%; } .chip-3 { left: 6%; } }
+
+  /* bandeau diaspora défilant */
+  .diaspora { background: var(--ink); color: #fff; overflow: hidden; padding: 16px 0; }
+  .diaspora .track { display: flex; gap: 0; width: max-content; animation: marquee 180s linear infinite; will-change: transform; }
+  .diaspora .track span { display: inline-flex; align-items: center; font-weight: 800; font-size: 17px; letter-spacing: .3px; padding: 0 26px; white-space: nowrap; }
+  .diaspora .track span::after { content: '✦'; color: var(--yellow); margin-left: 26px; font-size: 13px; }
+  @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) { .diaspora .track { animation: none; } }
+
+  /* teaser cards */
+  .teasers { display: grid; grid-template-columns: 1fr; gap: 22px; }
+  .teaser { border-radius: var(--radius); padding: 38px; position: relative; overflow: hidden; display: flex; flex-direction: column; min-height: 220px; }
+  .teaser h3 { font-size: 28px; margin-bottom: 12px; }
+  .teaser p { font-size: 16px; line-height: 1.55; max-width: 560px; }
+  .teaser .btn { align-self: flex-start; margin-top: auto; }
+  .teaser-sec { background: var(--slate); color: #fff; }
+  .teaser-sec p { color: rgba(255,255,255,.7); }
+  .teaser .ff-marker { font-size: 22px; transform: rotate(-3deg); display: inline-block; margin-bottom: 8px; }
+</style>
 </head>
-
 <body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.jsx"></script>
-</body>
 
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a href="index.html" class="brand" aria-label="Wera, accueil">
+      <img class="word" src="logo-word-black.png" alt="Wera" decoding="async" />
+    </a>
+    <nav class="nav-links">
+      <a href="index.html#how">Comment ça marche</a>
+      <a href="securite.html">Sécurité</a>
+      <a href="a-propos.html">À propos</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="auth.html#connexion" class="nav-login">Connexion</a>
+      <a href="auth.html#inscription" class="btn btn-yellow">S'inscrire</a>
+    </div>
+    <button class="nav-burger" aria-label="Ouvrir le menu" aria-expanded="false"><span></span></button>
+  </div>
+  <div class="mobile-menu">
+    <a href="index.html#how">Comment ça marche</a>
+    <a href="securite.html">Sécurité</a>
+    <a href="a-propos.html">À propos</a>
+    <div class="menu-sep"></div>
+    <a href="auth.html#connexion" class="menu-login">Connexion</a>
+    <a href="auth.html#inscription" class="btn btn-yellow">S'inscrire</a>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-card">
+      <div class="hero-left">
+        <div class="hero-marker">
+          <span class="ff-marker" style="font-size: 30px;">TAIRO ARY !!!</span>
+        </div>
+
+        <h1 class="hero-title">
+          <span class="line">Miresaka,</span>
+          <span class="line">Mizara,</span>
+          <span class="line"><span class="hl">N'iza N'iza,</span></span>
+          <span class="line"><span class="hl">N'aiza N'aiza.</span></span>
+        </h1>
+        <p class="hero-body">Un seul clic et tu tombes sur un·e autre Malgache, quelque part dans le monde. Pas d'algorithme — juste la vie, la diaspora, et la bonne humeur.</p>
+
+        <a href="appel.html" class="btn btn-primary btn-lg hero-cta">
+          <svg class="ic" viewBox="0 0 24 24" fill="none"><path d="M15.5 10.5 21 7v10l-5.5-3.5M3 6.5A2.5 2.5 0 0 1 5.5 4h7A2.5 2.5 0 0 1 15 6.5v11A2.5 2.5 0 0 1 12.5 20h-7A2.5 2.5 0 0 1 3 17.5v-11Z" stroke="#fff" stroke-width="1.9" stroke-linejoin="round"/></svg>
+          Lancer un appel
+        </a>
+      </div>
+
+      <!-- Bouton vidéo central, à cheval entre les deux panneaux -->
+      <div class="hero-center-cta">
+        <a href="appel.html" class="hero-center-vbtn" aria-label="Lancer un appel">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><path d="M15.5 10.5 21 7v10l-5.5-3.5M3 6.5A2.5 2.5 0 0 1 5.5 4h7A2.5 2.5 0 0 1 15 6.5v11A2.5 2.5 0 0 1 12.5 20h-7A2.5 2.5 0 0 1 3 17.5v-11Z" stroke="#FADC34" stroke-width="1.9" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+
+      <div class="hero-photo">
+        <img class="img" src="hero-community.jpg" alt="Jeunes Malgaches qui font la fête ensemble" fetchpriority="high" decoding="async" />
+
+        <div class="call-chip chip-1">
+          <span class="av" style="background:linear-gradient(135deg,#E87C4A,#c85a2a);">Rk</span>
+          <span class="txt"><b>Rakoto · Tana</b><em>vient de rejoindre</em></span>
+          <span class="pulse"></span>
+        </div>
+        <div class="call-chip chip-2">
+          <span class="av" style="background:linear-gradient(135deg,#4A7CE8,#2a52c8);">Mi</span>
+          <span class="txt"><b>Miora · Itaosy</b><em>en appel</em></span>
+          <span class="pulse"></span>
+        </div>
+        <div class="call-chip chip-3">
+          <span class="av" style="background:linear-gradient(135deg,#2FB16B,#1c8a4f);">Fa</span>
+          <span class="txt"><b>Fano · Montréal</b><em>en ligne</em></span>
+          <span class="pulse"></span>
+        </div>
+
+        <div class="hero-badges">
+          <div class="hbadge">
+            <span class="hi" style="background-color: rgba(255, 212, 52, 0.22)"><span style="width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(47,177,107,.25);display:block;"></span></span>
+            <span><b>12 480</b><span class="hs">en ligne</span></span>
+          </div>
+          <div class="hbadge">
+            <span class="hi"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z" stroke="#141414" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
+            <span><b>Pseudo</b><span class="hs">au choix</span></span>
+          </div>
+          <div class="hbadge">
+            <span class="hi"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#141414" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span><b>Gratuit</b><span class="hs">vita malagasy</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BANDEAU DIASPORA ============ -->
+<section class="diaspora" aria-hidden="true">
+  <div class="track">
+    <span>Antananarivo</span><span>Analakely</span><span>Ankorondrano</span><span>Isoraka</span><span>Toamasina</span><span>Ivandry</span><span>Ambatobe</span><span>Behoririka</span><span>Mahamasina</span><span>Antsirabe</span><span>Ankadifotsy</span><span>Andraharo</span><span>Ambohijatovo</span><span>Antaninandro</span><span>Mahajanga</span><span>Antanimena</span><span>Ampefiloha</span><span>Ampandrana</span><span>Andravoahangy</span><span>Fianarantsoa</span><span>Ankadimbahoaka</span><span>Ankatso</span><span>Ambohipo</span><span>Ambanidia</span><span>Toliara</span><span>Ambohimanarina</span><span>Ambohitrarahaba</span><span>Ambodivona</span><span>Isotry</span><span>Antsiranana</span><span>Andavamamba</span><span>Anosibe</span><span>Anosizato</span><span>Itaosy</span><span>Ambatondrazaka</span><span>Ivato</span><span>Talatamaty</span><span>Ilafy</span><span>Antehiroka</span><span>Nosy Be</span><span>Ankadindramamy</span><span>Ankazomanga</span><span>Antanimora</span><span>Faravohitra</span><span>Morondava</span><span>Ambondrona</span><span>Tsaralalana</span><span>Antsahavola</span><span>Ambohidahy</span><span>Manakara</span><span>Ankadivato</span><span>Soarano</span><span>Analamahitsy</span><span>Amboditsiry</span><span>Taolagnaro</span><span>Ankerana</span><span>Ampahibe</span><span>Ampasanimalo</span><span>Ambatoroka</span><span>Sambava</span><span>Manjakaray</span><span>Ambohijanahary</span><span>Andranomena</span><span>Ambatomaro</span><span>Antalaha</span><span>Ambohibao</span><span>Iavoloha</span><span>Alarobia</span><span>Ambohimiandra</span><span>Mananjary</span><span>Antsakaviro</span><span>Nanisana</span><span>Ambatomena</span><span>Ankadilalana</span><span>Farafangana</span><span>Andranoro</span><span>Ambohitrimanjaka</span><span>Fenoarivo</span><span>Ambohijoky</span><span>Maroantsetra</span><span>Ambohipotsy</span><span>Mahazoarivo</span><span>Amparibe</span><span>Ambohimanambola</span><span>Ihosy</span><span>67ha</span><span>Ampasika</span><span>Ambatolampy</span><span>Analamanga</span><span>Moramanga</span><span>Anosy</span><span>Tsimbazaza</span><span>Ambatonakanga</span><span>Andohalo</span><span>Ambositra</span><span>Ambohitsorohitra</span><span>Ankaraobato</span><span>Bemasoandro</span><span>Ampanotokana</span><span>Fenoarivo Atsinanana</span><span>Andraisoro</span><span>Ambohimahitsy</span><span>Androndra</span><span>Ankadinandriana</span><span>Vohemar</span><span>Antanjombe</span><span>Amboaroy</span><span>Anjanahary</span><span>Antanety</span><span>Maevatanana</span><span>Anosipatrana</span><span>Ambohidroa</span><span>Andrefan Ambohijanahary</span><span>Ambohimirary</span><span>Tsiroanomandidy</span><span>Ambohidrapeto</span><span>Andranonahoatra</span><span>Soavina</span><span>Tsiadana</span><span>Miarinarivo</span><span>Ambohimanga</span><span>Anosiala</span><span>Merimandroso</span><span>Alasora</span><span>Fort-Dauphin</span><span>Masindray</span><span>Ambohidratrimo</span><span>Mahitsy</span><span>Ankadikely</span><span>Paris</span><span>Manandriana</span><span>Antanetibe</span><span>Ambohijafy</span><span>Andoharanofotsy</span><span>Marseille</span><span>Tanjombato</span><span>Sabotsy Namehana</span><span>Andrononobe</span><span>Ambohitrakely</span><span>Lyon</span><span>Antsobolo</span><span>Ankaditoho</span><span>Ambatobevanja</span><span>Andranomadio</span><span>Toulouse</span><span>Ambohimananarivo</span><span>Andranomanalina</span><span>Ampahitrosy</span><span>Andohatapenaka</span><span>Bordeaux</span><span>Ampasampito</span><span>Anjezika</span><span>Ankadimanga</span><span>Ambodin Isotry</span><span>Montréal</span><span>Ambatomainty</span><span>Antanambao</span><span>Cité Ampefiloha</span><span>Antaninarenina</span><span>La Réunion</span><span>Ambohijanaka</span><span>Faliarivo</span><span>Anosivavaka</span><span>Ambodihady</span><span>Maurice</span><span>Ambatofotsy</span><span>Manakambahiny</span><span>Ampitatafika</span><span>Antsahamamy</span><span>Bruxelles</span><span>Ambohimandroso</span><span>Antanjombe Avaratra</span><span>Ankadikely Ilafy</span><span>Ambohibary</span><span>Genève</span><span>Ambohitrandriana</span><span>Andranovelona</span><span>Fiadanana</span><span>Ankadindratombo</span><span>Londres</span><span>Ambatomitsangana</span><span>Ambohimitsimbina</span><span>Mandroseza</span><span>Betongolo</span><span>Mayotte</span><span>Ambodimita</span><span>Ambohidrano</span><span>Antsofinondry</span><span>Ambohitompoina</span><span>Nantes</span><span>Ambaravaranala</span><span>Andrainarivo</span><span>Amboavahy</span><span>Ampahimanga</span><span>Strasbourg</span><span>Manjakandriana</span><span>Ambatomanga</span><span>Anjeva</span><span>Antsahadinta</span><span>Nice</span>
+    <span>Antananarivo</span><span>Analakely</span><span>Ankorondrano</span><span>Isoraka</span><span>Toamasina</span><span>Ivandry</span><span>Ambatobe</span><span>Behoririka</span><span>Mahamasina</span><span>Antsirabe</span><span>Ankadifotsy</span><span>Andraharo</span><span>Ambohijatovo</span><span>Antaninandro</span><span>Mahajanga</span><span>Antanimena</span><span>Ampefiloha</span><span>Ampandrana</span><span>Andravoahangy</span><span>Fianarantsoa</span><span>Ankadimbahoaka</span><span>Ankatso</span><span>Ambohipo</span><span>Ambanidia</span><span>Toliara</span><span>Ambohimanarina</span><span>Ambohitrarahaba</span><span>Ambodivona</span><span>Isotry</span><span>Antsiranana</span><span>Andavamamba</span><span>Anosibe</span><span>Anosizato</span><span>Itaosy</span><span>Ambatondrazaka</span><span>Ivato</span><span>Talatamaty</span><span>Ilafy</span><span>Antehiroka</span><span>Nosy Be</span><span>Ankadindramamy</span><span>Ankazomanga</span><span>Antanimora</span><span>Faravohitra</span><span>Morondava</span><span>Ambondrona</span><span>Tsaralalana</span><span>Antsahavola</span><span>Ambohidahy</span><span>Manakara</span><span>Ankadivato</span><span>Soarano</span><span>Analamahitsy</span><span>Amboditsiry</span><span>Taolagnaro</span><span>Ankerana</span><span>Ampahibe</span><span>Ampasanimalo</span><span>Ambatoroka</span><span>Sambava</span><span>Manjakaray</span><span>Ambohijanahary</span><span>Andranomena</span><span>Ambatomaro</span><span>Antalaha</span><span>Ambohibao</span><span>Iavoloha</span><span>Alarobia</span><span>Ambohimiandra</span><span>Mananjary</span><span>Antsakaviro</span><span>Nanisana</span><span>Ambatomena</span><span>Ankadilalana</span><span>Farafangana</span><span>Andranoro</span><span>Ambohitrimanjaka</span><span>Fenoarivo</span><span>Ambohijoky</span><span>Maroantsetra</span><span>Ambohipotsy</span><span>Mahazoarivo</span><span>Amparibe</span><span>Ambohimanambola</span><span>Ihosy</span><span>67ha</span><span>Ampasika</span><span>Ambatolampy</span><span>Analamanga</span><span>Moramanga</span><span>Anosy</span><span>Tsimbazaza</span><span>Ambatonakanga</span><span>Andohalo</span><span>Ambositra</span><span>Ambohitsorohitra</span><span>Ankaraobato</span><span>Bemasoandro</span><span>Ampanotokana</span><span>Fenoarivo Atsinanana</span><span>Andraisoro</span><span>Ambohimahitsy</span><span>Androndra</span><span>Ankadinandriana</span><span>Vohemar</span><span>Antanjombe</span><span>Amboaroy</span><span>Anjanahary</span><span>Antanety</span><span>Maevatanana</span><span>Anosipatrana</span><span>Ambohidroa</span><span>Andrefan Ambohijanahary</span><span>Ambohimirary</span><span>Tsiroanomandidy</span><span>Ambohidrapeto</span><span>Andranonahoatra</span><span>Soavina</span><span>Tsiadana</span><span>Miarinarivo</span><span>Ambohimanga</span><span>Anosiala</span><span>Merimandroso</span><span>Alasora</span><span>Fort-Dauphin</span><span>Masindray</span><span>Ambohidratrimo</span><span>Mahitsy</span><span>Ankadikely</span><span>Paris</span><span>Manandriana</span><span>Antanetibe</span><span>Ambohijafy</span><span>Andoharanofotsy</span><span>Marseille</span><span>Tanjombato</span><span>Sabotsy Namehana</span><span>Andrononobe</span><span>Ambohitrakely</span><span>Lyon</span><span>Antsobolo</span><span>Ankaditoho</span><span>Ambatobevanja</span><span>Andranomadio</span><span>Toulouse</span><span>Ambohimananarivo</span><span>Andranomanalina</span><span>Ampahitrosy</span><span>Andohatapenaka</span><span>Bordeaux</span><span>Ampasampito</span><span>Anjezika</span><span>Ankadimanga</span><span>Ambodin Isotry</span><span>Montréal</span><span>Ambatomainty</span><span>Antanambao</span><span>Cité Ampefiloha</span><span>Antaninarenina</span><span>La Réunion</span><span>Ambohijanaka</span><span>Faliarivo</span><span>Anosivavaka</span><span>Ambodihady</span><span>Maurice</span><span>Ambatofotsy</span><span>Manakambahiny</span><span>Ampitatafika</span><span>Antsahamamy</span><span>Bruxelles</span><span>Ambohimandroso</span><span>Antanjombe Avaratra</span><span>Ankadikely Ilafy</span><span>Ambohibary</span><span>Genève</span><span>Ambohitrandriana</span><span>Andranovelona</span><span>Fiadanana</span><span>Ankadindratombo</span><span>Londres</span><span>Ambatomitsangana</span><span>Ambohimitsimbina</span><span>Mandroseza</span><span>Betongolo</span><span>Mayotte</span><span>Ambodimita</span><span>Ambohidrano</span><span>Antsofinondry</span><span>Ambohitompoina</span><span>Nantes</span><span>Ambaravaranala</span><span>Andrainarivo</span><span>Amboavahy</span><span>Ampahimanga</span><span>Strasbourg</span><span>Manjakandriana</span><span>Ambatomanga</span><span>Anjeva</span><span>Antsahadinta</span><span>Nice</span>
+  </div>
+</section>
+
+<!-- ============ COMMENT ÇA MARCHE ============ -->
+<section class="section" id="how">
+  <div class="wrap">
+    <div class="section-head center reveal">
+      <span class="eyebrow">AHOANA NY FANDEHANY ?</span>
+      <h2>Telo segondra, dia miresaka.</h2>
+      <p class="lead">Pas de profil à remplir, pas de swipe sans fin. Wera te met en relation, tout de suite.</p>
+    </div>
+    <div class="steps reveal" style="margin-top: 54px;">
+      <div class="step">
+        <div class="num">1</div>
+        <h3>Crée ton compte</h3>
+        <p>Inscription rapide en pseudo + e-mail pour rejoindre la communauté. Autorise ta caméra et ton micro, et c'est parti.</p>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <h3>Tombe sur un·e Malgache</h3>
+        <p>Tana, Paris, Montréal, La Réunion… on te connecte au hasard à quelqu'un de la communauté.</p>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <h3>Discute, ou passe</h3>
+        <p>Le courant passe ? Discute autant que tu veux. Sinon, un clic et tu rencontres quelqu'un d'autre.</p>
+      </div>
+    </div>
+    <div class="center reveal" style="margin-top: 44px;">
+      <a href="appel.html" class="btn btn-yellow btn-lg">Essayer maintenant</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FONCTIONNALITÉS ============ -->
+<section class="section" style="background: var(--paper-2);">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Fonctionnalités</span>
+      <h2>Natao ho an'ny Malagasy rehetra.</h2>
+    </div>
+    <div class="feature-grid reveal" style="margin-top: 44px;">
+      <div class="feature">
+        <div class="ficon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M15.5 10.5 21 7v10l-5.5-3.5M3 6.5A2.5 2.5 0 0 1 5.5 4h7A2.5 2.5 0 0 1 15 6.5v11A2.5 2.5 0 0 1 12.5 20h-7A2.5 2.5 0 0 1 3 17.5v-11Z" stroke="#141414" stroke-width="1.9" stroke-linejoin="round"/></svg></div>
+        <h3>Vidéo aléatoire</h3>
+        <p>Un clic, une rencontre. La spontanéité d'une vraie conversation, sans algorithme qui décide pour toi.</p>
+      </div>
+      <div class="feature">
+        <div class="ficon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="4" y="10.5" width="16" height="10" rx="2.5" stroke="#141414" stroke-width="1.9"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" stroke="#141414" stroke-width="1.9"/></svg></div>
+        <h3>Profil discret</h3>
+        <p>Choisis un pseudo, partage le strict minimum. Tu décides ce que tu montres, et quand tu le montres.</p>
+      </div>
+      <div class="feature">
+        <div class="ficon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" stroke="#141414" stroke-width="1.9" stroke-linecap="round"/><circle cx="16" cy="7" r="2.4" stroke="#141414" stroke-width="1.9"/><circle cx="8" cy="17" r="2.4" stroke="#141414" stroke-width="1.9"/></svg></div>
+        <h3>Filtres de rencontre</h3>
+        <p>Région, langue, centres d'intérêt. Affine qui tu croises — ou laisse le hasard faire.</p>
+      </div>
+      <div class="feature">
+        <div class="ficon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7A2.5 2.5 0 0 1 17.5 16H10l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5v-7Z" stroke="#141414" stroke-width="1.9" stroke-linejoin="round"/></svg></div>
+        <h3>Chat pendant l'appel</h3>
+        <p>Si le micro coince ou que tu préfères écrire, un message s'envoie en direct, sans quitter la vidéo.</p>
+      </div>
+      <div class="feature">
+        <div class="ficon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="#141414" stroke-width="1.9"/><path d="M3.5 12h17M12 3.5c2.5 2.5 2.5 14 0 17M12 3.5c-2.5 2.5-2.5 14 0 17" stroke="#141414" stroke-width="1.6"/></svg></div>
+        <h3>Diaspora sans frontière</h3>
+        <p>De Tana à la diaspora, Wera relie les Malgaches du monde entier en une seconde.</p>
+      </div>
+      <div class="feature">
+        <div class="ficon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7-4.3-7-9.2A4.3 4.3 0 0 1 12 8a4.3 4.3 0 0 1 7 2.8C19 15.7 12 20 12 20Z" stroke="#141414" stroke-width="1.9" stroke-linejoin="round"/></svg></div>
+        <h3>Le respect, fanajana</h3>
+        <p>Signale ou bloque en un geste. Une communauté bienveillante, modérée, qui se respecte.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TEASERS ============ -->
+<section class="section">
+  <div class="wrap teasers reveal">
+    <div class="teaser teaser-sec">
+      <span class="ff-marker" style="color: var(--yellow); display: block; margin-bottom: 18px;">FANAJANA</span>
+      <h3>Le respect avant tout.</h3>
+      <p>Wera tient grâce au respect mutuel : pas de haine, pas de nudité, on reste bienveillant. Découvre comment on protège la communauté.</p>
+      <a href="securite.html" class="btn btn-yellow" style="margin-top: 26px;">Sécurité &amp; modération</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="section" style="background: var(--paper-2);">
+  <div class="wrap">
+    <div class="section-head center reveal">
+      <span class="eyebrow">FAQ</span>
+      <h2>Les questions fréquentes</h2>
+    </div>
+    <div class="faq reveal" style="margin-top: 40px;">
+      <div class="faq-item">
+        <button class="faq-q">Wera, c'est gratuit ?</button>
+        <div class="faq-a"><p>Oui. Lancer un appel et rencontrer des Malgaches est entièrement gratuit. Une inscription rapide est requise pour protéger la communauté.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Faut-il créer un compte ?</button>
+        <div class="faq-a"><p>Oui. Un compte rapide est nécessaire pour rejoindre Wera — c'est ce qui nous permet de garder la communauté bienveillante et sécurisée. Tu choisis ton pseudo, et tu ne partages que ce que tu veux.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Avec qui vais-je tomber ?</button>
+        <div class="faq-a"><p>Avec un·e autre Malgache de la communauté, au hasard — de Madagascar ou de la diaspora.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Comment êtes-vous sûrs que ça reste bienveillant ?</button>
+        <div class="faq-a"><p>Le signalement et le blocage sont disponibles à tout moment, en un geste. Notre charte interdit la haine et la nudité, et la modération applique des sanctions graduées (avertissement, suspension, bannissement).</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Est-ce que ça marche sur le web et le mobile ?</button>
+        <div class="faq-a"><p>Oui. Tu peux lancer un appel directement depuis ton navigateur sur wera.mg, ou depuis l'application mobile. La même communauté, partout.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CTA FINAL ============ -->
+<section class="section-sm band-yellow">
+  <div class="wrap center reveal">
+    <span class="ff-marker" style="font-size: 26px; transform: rotate(-3deg); display: inline-block;">TAIRO ARY !!!</span>
+    <h2 style="margin: 10px 0 22px;">Vonona ve ?<br />Ndao ary !</h2>
+    <a href="appel.html" class="btn btn-primary btn-lg">Lancer un appel</a>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div>
+        <a href="index.html" class="brand" aria-label="Wera, accueil">
+          <img class="word" src="logo-word-yellow.png" alt="Wera" loading="lazy" decoding="async" />
+        </a>
+        <p class="footer-blurb">La communauté malgache en vidéo. Rencontre des Malgaches partout dans le monde.
+Madagascar, France, Canada, Maurice, La Réunion, Mayotte...</p>
+      </div>
+      <div>
+        <h4>Produit</h4>
+        <ul>
+          <li><a href="appel.html">Lancer un appel</a></li>
+          <li><a href="index.html#how">Comment ça marche</a></li>
+          <li>
+</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Communauté</h4>
+        <ul>
+          <li><a href="a-propos.html">À propos</a></li>
+          <li><a href="securite.html">Sécurité &amp; modération</a></li>
+          <li><a href="securite.html#charte">Charte</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Légal</h4>
+        <ul>
+          <li><a href="legal.html#cgu-1">Conditions</a></li>
+          <li><a href="legal.html#privacy-1">Confidentialité</a></li>
+          <li><a href="legal.html#mod-1">Modération</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Wera · wera.mg</span>
+      <span class="ff-marker">Vita malagasy ho an'ny Malagasy 🇲🇬</span>
+    </div>
+  </div>
+</footer>
+
+<script src="wera-api.js"></script>
+<script src="site.js"></script>
+</body>
 </html>

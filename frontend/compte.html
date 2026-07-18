@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Mon compte · Wera</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Permanent+Marker&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+<style>
+  body { background: var(--paper); }
+
+  /* ===== header strip ===== */
+  .acc-head { background: var(--ink); color: #fff; padding: 56px 0 96px; position: relative; overflow: hidden; }
+  .acc-head::before { content: ''; position: absolute; top: -120px; right: -100px; width: 420px; height: 420px; background: radial-gradient(circle, var(--yellow) 0%, rgba(250,220,52,0) 65%); opacity: .14; }
+  .acc-head .wrap { position: relative; }
+  .acc-head .ff-marker { color: var(--yellow); font-size: 22px; transform: rotate(-3deg); display: inline-block; }
+  .acc-head h1 { font-size: clamp(32px, 4vw, 44px); margin: 8px 0 4px; letter-spacing: -.02em; }
+  .acc-head .sub { color: rgba(255,255,255,.65); font-size: 15.5px; }
+
+  /* ===== shell ===== */
+  .acc-shell { max-width: 980px; margin: -64px auto 80px; padding: 0 20px; position: relative; z-index: 2; }
+  .acc-card { background: var(--card); border-radius: 22px; box-shadow: 0 24px 60px -28px rgba(20,20,20,.32); overflow: hidden; }
+
+  /* tabs */
+  .acc-tabs { display: flex; gap: 4px; padding: 14px 14px 0; border-bottom: 1px solid var(--line); background: var(--card); }
+  .acc-tab { background: none; border: none; padding: 14px 22px; font-family: inherit; font-size: 15px; font-weight: 700; color: var(--sub); cursor: pointer; border-radius: 10px 10px 0 0; position: relative; transition: color .15s; }
+  .acc-tab:hover { color: var(--ink); }
+  .acc-tab.active { color: var(--ink); }
+  .acc-tab.active::after { content: ''; position: absolute; left: 14px; right: 14px; bottom: -1px; height: 3px; background: var(--yellow); border-radius: 2px; }
+
+  .acc-pane { padding: 32px 36px 40px; }
+  .acc-pane.hidden, .hidden { display: none !important; }
+  @media (max-width: 640px) { .acc-pane { padding: 24px 22px 32px; } .acc-tab { padding: 12px 16px; font-size: 14px; } .field .input, .field textarea { font-size: 16px; } }
+
+  /* ===== profile ===== */
+  .pf-top { display: flex; align-items: center; gap: 22px; padding-bottom: 26px; margin-bottom: 30px; border-bottom: 1px solid var(--line); }
+  .pf-avatar { width: 88px; height: 88px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 900; font-size: 30px; flex-shrink: 0; box-shadow: 0 8px 22px -8px rgba(20,20,20,.3); }
+  .pf-id b { display: block; font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
+  .pf-id span { display: block; color: var(--sub); font-size: 14px; margin-top: 4px; }
+  .pf-id .since { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; background: rgba(250,220,52,.22); color: var(--yellow-text); font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 20px; }
+
+  /* form layout reused from auth */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 580px) { .form-grid { grid-template-columns: 1fr; } }
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+  .field label { font-size: 13px; font-weight: 700; color: var(--ink); letter-spacing: .2px; }
+  .field .input, .field textarea { background: var(--paper); border: 1.5px solid var(--line); border-radius: 12px; padding: 13px 15px; font-family: inherit; font-size: 15px; color: var(--ink); transition: border-color .15s, box-shadow .15s; resize: vertical; }
+  .field .input:focus, .field textarea:focus { outline: none; border-color: var(--yellow-deep); box-shadow: 0 0 0 4px rgba(250,220,52,.25); }
+  .field .hint { font-size: 12.5px; color: var(--sub); }
+
+  .actions { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
+  .save-state { font-size: 13px; color: var(--green); font-weight: 700; opacity: 0; transition: opacity .25s; display: inline-flex; align-items: center; gap: 6px; }
+  .save-state.show { opacity: 1; }
+
+  /* ===== settings ===== */
+  .seg-h { font-size: 12px; font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase; color: var(--sub); margin: 0 0 14px; }
+  .seg { padding-bottom: 22px; margin-bottom: 22px; border-bottom: 1px solid var(--line); }
+  .seg:last-of-type { border-bottom: none; }
+
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .row .l b { display: block; font-size: 15px; color: var(--ink); }
+  .row .l span { display: block; font-size: 13px; color: var(--sub); margin-top: 2px; line-height: 1.45; }
+
+  /* toggle */
+  .toggle { position: relative; display: inline-block; width: 46px; height: 26px; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle .slider { position: absolute; cursor: pointer; inset: 0; background: var(--line); border-radius: 30px; transition: .2s; }
+  .toggle .slider::before { content: ''; position: absolute; height: 20px; width: 20px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+  .toggle input:checked + .slider { background: var(--ink); }
+  .toggle input:checked + .slider::before { transform: translateX(20px); background: var(--yellow); }
+
+  /* danger zone */
+  .danger { background: rgba(217,79,79,.06); border: 1px solid rgba(217,79,79,.25); border-radius: 14px; padding: 20px 22px; margin-top: 12px; }
+  .danger b { display: block; font-size: 15px; color: var(--red); margin-bottom: 4px; }
+  .danger p { font-size: 13.5px; color: var(--sub); margin: 0 0 12px; line-height: 1.5; }
+  .btn-danger { background: var(--red); color: #fff; border: none; padding: 10px 16px; border-radius: 10px; font-family: inherit; font-weight: 700; font-size: 14px; cursor: pointer; transition: filter .15s; }
+  .btn-danger:hover { filter: brightness(1.08); }
+
+  /* signed-out fallback */
+  .input[disabled] { background: #f1f1f4; color: #8e8e94; cursor: not-allowed; }
+  .hint.lock { color: var(--ink); display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+  .hint.lock::before { content: ''; width: 12px; height: 14px; flex-shrink: 0; background: currentColor; -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'><path d='M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5z' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>") no-repeat center / contain; mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'><path d='M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5z' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>") no-repeat center / contain; }
+  .signed-out { padding: 80px 30px; text-align: center; }
+  .signed-out h2 { font-size: 26px; margin: 10px 0 8px; }
+  .signed-out p { color: var(--sub); margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a href="index.html" class="brand" aria-label="Wera, accueil">
+      <img class="word" src="logo-word-black.png" alt="Wera" decoding="async" />
+    </a>
+    <nav class="nav-links">
+      <a href="index.html#how">Comment ça marche</a>
+      <a href="securite.html">Sécurité</a>
+      <a href="a-propos.html">À propos</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="auth.html#connexion" class="nav-login">Connexion</a>
+      <a href="auth.html#inscription" class="btn btn-yellow">S'inscrire</a>
+    </div>
+    <button class="nav-burger" aria-label="Ouvrir le menu" aria-expanded="false"><span></span></button>
+  </div>
+  <div class="mobile-menu">
+    <a href="index.html#how">Comment ça marche</a>
+    <a href="securite.html">Sécurité</a>
+    <a href="a-propos.html">À propos</a>
+    <div class="menu-sep"></div>
+    <a href="auth.html#connexion" class="menu-login">Connexion</a>
+    <a href="auth.html#inscription" class="btn btn-yellow">S'inscrire</a>
+  </div>
+</header>
+
+<!-- Empty hero (will be populated for logged-in users) -->
+<section class="acc-head">
+  <div class="wrap">
+    <span class="ff-marker" data-greet>Salama !</span>
+    <h1 data-page-title>Mon compte</h1>
+    <p class="sub">Gère ton profil et tes préférences.</p>
+  </div>
+</section>
+
+<section class="acc-shell">
+  <div class="acc-card" id="acc">
+
+    <!-- Signed-out fallback -->
+    <div class="signed-out hidden" id="signed-out">
+      <h2>Tu n'es pas connecté·e</h2>
+      <p>Connecte-toi pour gérer ton compte et tes préférences.</p>
+      <a href="auth.html#connexion" class="btn btn-primary">Se connecter</a>
+    </div>
+
+    <!-- Logged-in view -->
+    <div id="logged-in">
+      <div class="acc-tabs" role="tablist">
+        <button class="acc-tab" data-tab="profil" role="tab">Mon profil</button>
+        <button class="acc-tab" data-tab="parametres" role="tab">Paramètres</button>
+      </div>
+
+      <!-- ===== PROFIL ===== -->
+      <div class="acc-pane" data-pane="profil">
+        <div class="pf-top">
+          <div class="pf-avatar" data-pf-avatar>W</div>
+          <div class="pf-id">
+            <b data-pf-name>—</b>
+            <span data-pf-email>—</span>
+            <span class="since" data-pf-since>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.2"/></svg>
+              Membre depuis aujourd'hui
+            </span>
+          </div>
+        </div>
+
+        <form id="profile-form" onsubmit="event.preventDefault(); saveProfile();">
+          <div class="form-grid">
+            <div class="field">
+              <label for="pf-pseudo">Pseudo</label>
+              <input class="input" id="pf-pseudo" type="text" maxlength="24" />
+              <span class="hint" id="pf-pseudo-hint">Modifiable une fois tous les 30 jours. Édits libres pendant 24 h après l'inscription.</span>
+            </div>
+            <div class="field">
+              <label for="pf-ville">Ville</label>
+              <input class="input" id="pf-ville" type="text" placeholder="Tana, Paris, Maurice…" maxlength="40" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="pf-email">Adresse e-mail</label>
+            <input class="input" id="pf-email" type="email" />
+            <span class="hint">Sert à te connecter et recevoir les notifications.</span>
+          </div>
+
+          <div class="field">
+            <label for="pf-bio">Bio courte</label>
+            <textarea id="pf-bio" rows="3" maxlength="160" placeholder="Trois mots sur toi, ce qui te fait vibrer, ce dont tu aimes parler…"></textarea>
+            <span class="hint"><span id="pf-bio-count">0</span> / 160</span>
+          </div>
+
+          <div class="actions">
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+            <span class="save-state" id="pf-saved">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Enregistré
+            </span>
+          </div>
+        </form>
+      </div>
+
+      <!-- ===== PARAMÈTRES ===== -->
+      <div class="acc-pane hidden" data-pane="parametres">
+
+        <div class="seg">
+          <h3 class="seg-h">Préférences d'appel</h3>
+          <div class="row">
+            <div class="l"><b>Activer la caméra automatiquement</b><span>Au début de chaque appel, la caméra s'allume sans confirmer.</span></div>
+            <label class="toggle"><input type="checkbox" data-pref="autoCam" checked /><span class="slider"></span></label>
+          </div>
+          <div class="row">
+            <div class="l"><b>Activer le micro automatiquement</b><span>Pareil pour le micro à chaque nouvel appel.</span></div>
+            <label class="toggle"><input type="checkbox" data-pref="autoMic" checked /><span class="slider"></span></label>
+          </div>
+          <div class="row">
+            <div class="l"><b>Sons système</b><span>Notification de matching, fin d'appel, signalement.</span></div>
+            <label class="toggle"><input type="checkbox" data-pref="sounds" checked /><span class="slider"></span></label>
+          </div>
+        </div>
+
+        <div class="seg">
+          <h3 class="seg-h">Notifications</h3>
+          <div class="row">
+            <div class="l"><b>E-mails Wera</b><span>Nouveautés produit et événements communauté (max 1/mois).</span></div>
+            <label class="toggle"><input type="checkbox" data-pref="emails" /><span class="slider"></span></label>
+          </div>
+          <div class="row">
+            <div class="l"><b>Résumé hebdo</b><span>Récap des moments forts de la communauté chaque dimanche.</span></div>
+            <label class="toggle"><input type="checkbox" data-pref="weekly" /><span class="slider"></span></label>
+          </div>
+        </div>
+
+        <div class="seg">
+          <h3 class="seg-h">Confidentialité</h3>
+          <div class="row">
+            <div class="l"><b>Masquer mon pays</b><span>Ton drapeau n'apparaît pas pour les autres pendant l'appel.</span></div>
+            <label class="toggle"><input type="checkbox" data-pref="hideFlag" /><span class="slider"></span></label>
+          </div>
+        </div>
+
+        <div class="seg">
+          <h3 class="seg-h">Zone sensible</h3>
+          <div class="danger">
+            <b>Supprimer mon compte</b>
+            <p>Cette action est définitive. Ton pseudo, e-mail et préférences seront effacés.</p>
+            <button type="button" class="btn-danger" onclick="deleteAccount()">Supprimer mon compte</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div>
+        <a href="index.html" class="brand" aria-label="Wera, accueil">
+          <img class="word" src="logo-word-yellow.png" alt="Wera" loading="lazy" decoding="async" />
+        </a>
+        <p class="footer-blurb">La communauté malgache en vidéo.</p>
+      </div>
+      <div>
+        <h4>Produit</h4>
+        <ul>
+          <li><a href="appel.html">Lancer un appel</a></li>
+          <li><a href="index.html#how">Comment ça marche</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Communauté</h4>
+        <ul>
+          <li><a href="a-propos.html">À propos</a></li>
+          <li><a href="securite.html">Sécurité &amp; modération</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Légal</h4>
+        <ul>
+          <li><a href="legal.html#cgu-1">Conditions</a></li>
+          <li><a href="legal.html#privacy-1">Confidentialité</a></li>
+          <li><a href="legal.html#mod-1">Modération</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Wera · wera.mg</span>
+      <span class="ff-marker">Vita malagasy ho an'ny Malagasy 🇲🇬</span>
+    </div>
+  </div>
+</footer>
+
+<script src="wera-api.js"></script>
+<script src="site.js"></script>
+<script>
+(function() {
+  var user = window.Wera && window.Wera.getUser ? window.Wera.getUser() : null;
+  var signedOut = document.getElementById('signed-out');
+  var loggedIn = document.getElementById('logged-in');
+  var head = document.querySelector('.acc-head');
+
+  if (!user) {
+    signedOut.classList.remove('hidden');
+    loggedIn.classList.add('hidden');
+    head.style.display = 'none';
+    return;
+  }
+
+  // ----- avatar gradient (mirror site.js) -----
+  function colorFor(p) {
+    var palette = [['#E87C4A','#c85a2a'],['#4A7CE8','#2a52c8'],['#2FB16B','#1c8a4f'],['#7a4ae8','#4a2ac8'],['#e84a8a','#c82a6a'],['#e8b54a','#c8932a']];
+    var sum = 0; var k = p || 'W';
+    for (var i = 0; i < k.length; i++) sum += k.charCodeAt(i);
+    var c = palette[sum % palette.length];
+    return 'linear-gradient(135deg,' + c[0] + ',' + c[1] + ')';
+  }
+  function initials(p) {
+    if (!p) return 'W';
+    var parts = p.trim().split(/\s+/);
+    return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+  }
+
+  // ----- populate header + form -----
+  function render() {
+    var greetEl = document.querySelector('[data-greet]');
+    if (greetEl) greetEl.textContent = 'Salama, ' + (user.pseudo || 'toi') + ' !';
+    document.querySelector('[data-pf-name]').textContent = user.pseudo || 'Mon profil';
+    document.querySelector('[data-pf-email]').textContent = user.email || '';
+    var av = document.querySelector('[data-pf-avatar]');
+    av.style.background = colorFor(user.pseudo || user.email);
+    av.textContent = initials(user.pseudo || user.email);
+
+    document.getElementById('pf-pseudo').value = user.pseudo || '';
+    document.getElementById('pf-ville').value = user.ville || '';
+    document.getElementById('pf-email').value = user.email || '';
+    document.getElementById('pf-bio').value = user.bio || '';
+    document.getElementById('pf-bio-count').textContent = (user.bio || '').length;
+
+    renderPseudoLock();
+
+    // Member since
+    if (!user.createdAt) { user.createdAt = Date.now(); window.Wera.setUser(user); }
+    var diff = Math.floor((Date.now() - user.createdAt) / 86400000);
+    var since = document.querySelector('[data-pf-since]');
+    since.innerHTML = since.querySelector('svg').outerHTML + ' Membre depuis ' + (diff < 1 ? "aujourd'hui" : diff + ' jour' + (diff > 1 ? 's' : ''));
+  }
+  render();
+
+  // ----- hydrate depuis l'API (source de vérité : profil serveur) -----
+  if (window.WeraAPI) {
+    WeraAPI.req('/users/me').then(function (r) {
+      if (r.status === 200 && r.data && r.data.user) {
+        user = WeraAPI.storeUser(r.data.user);
+        render();
+      } else if (r.status === 401) {
+        WeraAPI.clearStoredUser();
+        location.reload();
+      }
+    }).catch(function () {});
+  }
+
+  // ----- pseudo lock (30 jours après chaque changement, libre pendant les 24h post-inscription) -----
+  var LOCK_MS = 30 * 86400000;
+  var GRACE_MS = 86400000;
+  function inGrace() { return user.createdAt && (Date.now() - user.createdAt) < GRACE_MS; }
+  function lockMsLeft() { return user.pseudoLockedUntil ? Math.max(0, user.pseudoLockedUntil - Date.now()) : 0; }
+  function renderPseudoLock() {
+    var input = document.getElementById('pf-pseudo');
+    var hint = document.getElementById('pf-pseudo-hint');
+    var left = lockMsLeft();
+    if (left > 0) {
+      var days = Math.ceil(left / 86400000);
+      input.disabled = true;
+      hint.className = 'hint lock';
+      hint.textContent = 'Verrouillé — modifiable de nouveau dans ' + days + ' jour' + (days > 1 ? 's' : '') + '.';
+    } else {
+      input.disabled = false;
+      hint.className = 'hint';
+      if (inGrace()) {
+        var hLeft = Math.max(1, Math.ceil((user.createdAt + GRACE_MS - Date.now()) / 3600000));
+        hint.textContent = 'Édits libres encore ' + hLeft + ' h. Après, chaque changement verrouille le pseudo 30 jours.';
+      } else {
+        hint.textContent = 'Le prochain changement verrouillera le pseudo pendant 30 jours.';
+      }
+    }
+  }
+
+  // ----- tabs (hash-driven) -----
+  var tabs = document.querySelectorAll('.acc-tab');
+  var panes = document.querySelectorAll('.acc-pane');
+  function activate(name) {
+    tabs.forEach(function (t) { t.classList.toggle('active', t.dataset.tab === name); });
+    panes.forEach(function (p) { p.classList.toggle('hidden', p.dataset.pane !== name); });
+    if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
+    document.querySelector('[data-page-title]').textContent = name === 'parametres' ? 'Paramètres' : 'Mon profil';
+  }
+  tabs.forEach(function (t) { t.addEventListener('click', function () { activate(t.dataset.tab); }); });
+  var hash = (location.hash || '').replace('#', '');
+  activate(hash === 'parametres' ? 'parametres' : 'profil');
+
+  // ----- bio counter -----
+  document.getElementById('pf-bio').addEventListener('input', function (e) {
+    document.getElementById('pf-bio-count').textContent = e.target.value.length;
+  });
+
+  // ----- profile save -----
+  window.saveProfile = function () {
+    var newPseudo = document.getElementById('pf-pseudo').value.trim();
+    var oldPseudo = user.pseudo || '';
+    var pseudoChanged = newPseudo && newPseudo !== oldPseudo && lockMsLeft() === 0;
+
+    if (pseudoChanged && !inGrace()) {
+      var ok = confirm(
+        'Confirmer le changement de pseudo ?\n\n« ' + oldPseudo + ' » → « ' + newPseudo + ' »\n\n' +
+        'Le pseudo sera verrouillé 30 jours après ce changement.'
+      );
+      if (!ok) {
+        document.getElementById('pf-pseudo').value = oldPseudo;
+        return;
+      }
+    }
+
+    if (pseudoChanged) {
+      user.pseudo = newPseudo;
+      if (!inGrace()) user.pseudoLockedUntil = Date.now() + LOCK_MS;
+    }
+    user.ville = document.getElementById('pf-ville').value.trim();
+    user.email = document.getElementById('pf-email').value.trim() || user.email;
+    user.bio = document.getElementById('pf-bio').value.trim();
+    window.Wera.setUser(user);
+
+    // Pousse les champs pris en charge par l'API (le reste — bio, prefs —
+    // reste local). L'email n'est pas modifiable côté serveur.
+    if (window.WeraAPI) {
+      var patch = {};
+      if (user.ville) patch.ville = user.ville;
+      if (pseudoChanged) patch.username = user.pseudo;
+      if (Object.keys(patch).length) {
+        WeraAPI.req('/users/me', { method: 'PUT', body: patch }).then(function (r) {
+          if (r.status === 200 && r.data && r.data.user) {
+            user = WeraAPI.storeUser(r.data.user);
+            render();
+          } else if (r.data && r.data.error) {
+            alert(r.data.error);
+          }
+        }).catch(function () {});
+      }
+    }
+    var s = document.getElementById('pf-saved');
+    s.classList.add('show');
+    setTimeout(function () { s.classList.remove('show'); }, 1800);
+    render();
+  };
+
+  // ----- preferences (auto-save) -----
+  var prefs = user.prefs || {};
+  document.querySelectorAll('[data-pref]').forEach(function (cb) {
+    var key = cb.dataset.pref;
+    if (key in prefs) cb.checked = !!prefs[key];
+    cb.addEventListener('change', function () {
+      prefs[key] = cb.checked;
+      user.prefs = prefs;
+      window.Wera.setUser(user);
+    });
+  });
+
+  // ----- delete -----
+  window.deleteAccount = function () {
+    if (!confirm('Supprimer définitivement ton compte ? Cette action est irréversible.')) return;
+    // La suppression côté serveur arrive bientôt — en attendant on ferme
+    // la session proprement (cookie + cache local).
+    var done = function () { location.href = 'index.html'; };
+    if (window.WeraAPI) WeraAPI.logout().then(done, done);
+    else { window.Wera.clearUser(); done(); }
+  };
+})();
+</script>
+</body>
+</html>

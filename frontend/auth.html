@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Connexion · Wera</title>
+<meta name="description" content="Connecte-toi ou crée ton compte Wera. Rejoins la communauté malgache en vidéo." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Permanent+Marker&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  body { background: var(--paper); }
+  .google-slot { display: flex; justify-content: center; min-height: 44px; }
+  .auth-error { display: none; background: rgba(229,72,77,.1); border: 1.5px solid rgba(229,72,77,.4); color: #b3261e; border-radius: 12px; padding: 12px 14px; font-size: 14px; font-weight: 600; margin-bottom: 14px; }
+  .auth-error.show { display: block; }
+
+  .auth-wrap { min-height: calc(100vh - 72px); display: grid; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 900px) { .auth-wrap { grid-template-columns: 1fr; min-height: 0; } }
+
+  /* ===== Visual side ===== */
+  .auth-visual { background: var(--yellow); position: relative; overflow: hidden; padding: 56px 64px; display: flex; flex-direction: column; justify-content: space-between; }
+  .auth-visual::before { content: ''; position: absolute; right: -120px; top: -160px; width: 500px; height: 500px; background: radial-gradient(circle, rgba(255,255,255,.45) 0%, rgba(255,255,255,0) 65%); pointer-events: none; }
+  .auth-visual::after { content: ''; position: absolute; left: -80px; bottom: -120px; width: 360px; height: 360px; background: radial-gradient(circle, rgba(20,20,20,.18) 0%, rgba(20,20,20,0) 65%); pointer-events: none; }
+  .auth-visual .top { position: relative; z-index: 2; }
+  .auth-visual .ff-marker { font-size: 26px; color: var(--ink); transform: rotate(-3deg); display: inline-block; }
+  .auth-visual h1 { font-size: clamp(36px, 4.4vw, 58px); line-height: 1.05; letter-spacing: -.02em; margin: 12px 0 16px; color: var(--ink); }
+  .auth-visual .lead { font-size: 17px; color: rgba(20,20,20,.78); max-width: 380px; line-height: 1.6; }
+  .auth-visual .ticks { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 12px; margin-top: 28px; }
+  .auth-visual .ticks li { list-style: none; display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--ink); font-size: 15px; }
+  .auth-visual .ticks li svg { flex-shrink: 0; }
+  .auth-visual .bot { position: relative; z-index: 2; display: flex; align-items: center; gap: 14px; }
+  .auth-visual .avatars { display: flex; }
+  .auth-visual .avatars span { width: 36px; height: 36px; border-radius: 50%; border: 2.5px solid var(--yellow); margin-left: -10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; color: #fff; }
+  .auth-visual .avatars span:first-child { margin-left: 0; }
+  .auth-visual .bot small { font-size: 13.5px; color: rgba(20,20,20,.7); font-weight: 600; }
+  .auth-visual .bot small b { color: var(--ink); }
+
+  /* ===== Form side ===== */
+  .auth-form { background: var(--paper); padding: 56px 64px; display: flex; flex-direction: column; justify-content: center; }
+  .auth-card { max-width: 440px; margin: 0 auto; width: 100%; }
+
+  .auth-back { display: inline-flex; align-items: center; gap: 8px; color: var(--sub); font-size: 14px; font-weight: 600; text-decoration: none; margin-bottom: 26px; transition: color .15s; }
+  .auth-back:hover { color: var(--ink); }
+  .auth-back svg { transition: transform .2s var(--ease); }
+  .auth-back:hover svg { transform: translateX(-3px); }
+
+  .auth-tabs { display: grid; grid-template-columns: 1fr 1fr; background: var(--paper-2); border-radius: 14px; padding: 5px; margin-bottom: 28px; position: relative; }
+  .auth-tab { background: none; border: none; padding: 12px 16px; font-family: inherit; font-size: 14.5px; font-weight: 700; color: var(--sub); cursor: pointer; border-radius: 10px; transition: color .2s, background .2s; }
+  .auth-tab.active { background: var(--card); color: var(--ink); box-shadow: 0 2px 8px -2px rgba(20,20,20,.12); }
+
+  .auth-pane h2 { font-size: 28px; margin: 0 0 6px; letter-spacing: -.015em; }
+  .auth-pane .sub { color: var(--sub); font-size: 15px; margin-bottom: 22px; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .field label { font-size: 13px; font-weight: 700; color: var(--ink); letter-spacing: .2px; }
+  .field label .opt { font-weight: 500; color: var(--sub); margin-left: 4px; }
+  .field .input { background: var(--card); border: 1.5px solid var(--line); border-radius: 12px; padding: 14px 16px; font-family: inherit; font-size: 15px; color: var(--ink); transition: border-color .15s, box-shadow .15s; }
+  .field .input:focus { outline: none; border-color: var(--yellow-deep); box-shadow: 0 0 0 4px rgba(250,220,52,.18); }
+  .field .input::placeholder { color: rgba(20,20,20,.35); }
+  .field .hint { font-size: 12.5px; color: var(--sub); margin-top: 2px; }
+  .field .with-icon { position: relative; }
+  .field .with-icon .input { padding-left: 44px; width: 100%; box-sizing: border-box; }
+  .field .with-icon .ico { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--sub); pointer-events: none; }
+  .field .with-icon .input.has-action { padding-right: 50px; }
+  .field .regen-in {
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    width: 34px; height: 34px; border-radius: 9px; border: none; background: var(--paper-2); color: var(--ink);
+    display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: background .15s ease, transform .35s var(--ease);
+  }
+  .field .regen-in:hover { background: var(--line); }
+  .field .regen-in:active { transform: translateY(-50%) rotate(180deg); }
+  /* toggle mot de passe */
+  .field .pass-toggle {
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    width: 36px; height: 36px; border-radius: 9px; border: none; background: transparent; color: var(--sub);
+    display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: color .15s, background .15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .field .pass-toggle:hover { background: var(--paper-2); color: var(--ink); }
+
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 560px) { .row-2 { grid-template-columns: 1fr; } }
+
+  .check { display: flex; align-items: flex-start; gap: 10px; font-size: 13.5px; color: var(--sub); line-height: 1.5; margin: 4px 0 18px; cursor: pointer; user-select: none; }
+  .check input { appearance: none; -webkit-appearance: none; width: 18px; height: 18px; border: 1.5px solid var(--line); border-radius: 5px; background: var(--card); cursor: pointer; flex-shrink: 0; margin-top: 1px; position: relative; transition: background .15s, border-color .15s; }
+  .check input:checked { background: var(--ink); border-color: var(--ink); }
+  .check input:checked::after { content: ''; position: absolute; left: 4px; top: 0px; width: 6px; height: 11px; border: solid var(--yellow); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+  .check a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--yellow); text-decoration-thickness: 2px; text-underline-offset: 2px; }
+
+  .forgot { font-size: 13.5px; color: var(--sub); text-decoration: none; }
+  .forgot:hover { color: var(--ink); text-decoration: underline; }
+  .row-between { display: flex; justify-content: space-between; align-items: center; margin: -2px 0 18px; }
+
+  .submit-btn { width: 100%; padding: 15px 20px; font-size: 15.5px; }
+  .submit-btn svg { margin-left: 4px; }
+
+  .divider { display: flex; align-items: center; gap: 14px; margin: 22px 0; color: var(--sub); font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+  .social { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .social-btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; padding: 12px; background: var(--card); border: 1.5px solid var(--line); border-radius: 12px; font-family: inherit; font-size: 14px; font-weight: 600; color: var(--ink); cursor: pointer; transition: border-color .15s, background .15s; }
+  .social-btn:hover { border-color: var(--ink); background: var(--paper-2); }
+
+  .switch-note { text-align: center; font-size: 14px; color: var(--sub); margin-top: 26px; }
+  .switch-note a { color: var(--ink); font-weight: 700; text-decoration: none; }
+  .switch-note a:hover { text-decoration: underline; text-decoration-color: var(--yellow); text-decoration-thickness: 2px; }
+
+  .pane-hidden { display: none; }
+
+  /* ========== MOBILE OVERRIDES (≤ 900px) ========== */
+  /* Éléments mobile-only / desktop-only */
+  .mobile-only { display: none; }
+  .desktop-only { display: block; }
+
+  @media (max-width: 900px) {
+    .mobile-only { display: flex; }
+    .desktop-only { display: none !important; }
+
+    /* Cache le panneau visuel et la nav complète — remplacés par la bande compacte */
+    .auth-visual { display: none; }
+    .nav { display: none; }
+
+    /* Bande compacte — padding-top pour dégager la Dynamic Island */
+    .auth-mobile-brand {
+      background: var(--yellow);
+      padding: 54px 20px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      border-bottom: 1px solid rgba(20,20,20,.08);
+      flex-shrink: 0;
+    }
+    .auth-mobile-brand img { height: 24px; width: auto; }
+    .auth-mobile-brand .online-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(20,20,20,.1);
+      padding: 5px 10px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .auth-mobile-brand .online-chip .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #2FB16B;
+      box-shadow: 0 0 0 3px rgba(47,177,107,.25);
+      flex-shrink: 0;
+    }
+
+    /* auth-wrap : colonne plein écran, 100dvh */
+    .auth-wrap { display: flex; flex-direction: column; min-height: 100dvh; }
+
+    /* Form : flex:1, centré verticalement */
+    .auth-form { padding: 20px 20px 24px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .auth-card { max-width: 100%; }
+
+    .auth-back { display: none; }
+
+    /* Tabs compacts */
+    .auth-tabs { margin-bottom: 14px; padding: 4px; }
+    .auth-tab { padding: 10px 12px; font-size: 14px; }
+
+    /* Titres */
+    .auth-pane h2 { font-size: 21px; margin-bottom: 3px; }
+    .auth-pane .sub { font-size: 13px; margin-bottom: 12px; }
+
+    /* Inputs : 16px pour éviter zoom iOS */
+    .field .input {
+      font-size: 16px;
+      padding: 12px 14px;
+      min-height: 46px;
+      border-radius: 12px;
+    }
+    .field .with-icon .input { padding-left: 42px; }
+    .field label { font-size: 12.5px; }
+    .field { margin-bottom: 10px; gap: 4px; }
+
+    /* Checkbox */
+    .check { padding: 2px 0; margin: 2px 0 12px; }
+    .check input { width: 20px; height: 20px; border-radius: 5px; margin-top: 0; flex-shrink: 0; }
+    .check input:checked::after { left: 4px; top: 0px; width: 7px; height: 12px; }
+    .check { font-size: 13px; gap: 10px; }
+
+    /* Submit */
+    .submit-btn { padding: 14px 20px; font-size: 15px; border-radius: 14px; }
+
+    /* Boutons sociaux */
+    .social { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .social-btn { padding: 11px 10px; font-size: 14px; border-radius: 12px; min-height: 46px; }
+
+    /* Divider */
+    .divider { margin: 12px 0; font-size: 11px; }
+
+    /* Zone sociale mobile en haut */
+    .auth-social-top { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 2px; }
+    .auth-social-top .social-btn {
+      justify-content: center;
+      min-height: 46px;
+      font-size: 14px;
+      border-radius: 12px;
+      gap: 7px;
+      padding: 11px 8px;
+    }
+
+    /* Switch note */
+    .switch-note { margin-top: 14px; font-size: 13px; }
+
+    /* Row remember/forgot */
+    .row-between { margin: 0 0 12px; }
+  }
+
+  @media (max-width: 400px) {
+    .auth-social-top { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a href="index.html" class="brand" aria-label="Wera, accueil">
+      <img class="word" src="logo-word-black.png" alt="Wera" decoding="async" />
+    </a>
+    <nav class="nav-links">
+      <a href="index.html#how">Comment ça marche</a>
+      <a href="securite.html">Sécurité</a>
+      <a href="a-propos.html">À propos</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="auth.html#connexion" class="nav-login">Connexion</a>
+      <a href="auth.html#inscription" class="btn btn-yellow">S'inscrire</a>
+    </div>
+    <button class="nav-burger" aria-label="Ouvrir le menu" aria-expanded="false"><span></span></button>
+  </div>
+  <div class="mobile-menu">
+    <a href="index.html#how">Comment ça marche</a>
+    <a href="securite.html">Sécurité</a>
+    <a href="a-propos.html">À propos</a>
+    <div class="menu-sep"></div>
+    <a href="auth.html#connexion" class="menu-login">Connexion</a>
+    <a href="auth.html#inscription" class="btn btn-yellow">S'inscrire</a>
+  </div>
+</header>
+
+<main class="auth-wrap">
+
+  <!-- ===== Bande compacte mobile (cachée sur desktop) ===== -->
+  <div class="auth-mobile-brand mobile-only">
+    <img src="logo-word-black.png" alt="Wera" />
+    <span class="online-chip"><span class="dot"></span>12 480 en ligne</span>
+  </div>
+
+  <!-- ===== Côté gauche : visuel ===== -->
+  <aside class="auth-visual">
+    <div class="top">
+      <span class="ff-marker">Tonga soa !</span>
+      <h1>Andao hiaraka aminay e</h1>
+      <p class="lead">Crée ton compte en moins d'une minute, et tombe sur quelqu'un de la diaspora ou du pays au prochain clic.</p>
+
+      <ul class="ticks">
+        <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#141414" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Pseudo au choix, profil discret</li>
+        <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#141414" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Gratuit, sans pub intrusive</li>
+        <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#141414" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Appels jamais enregistrés</li>
+        <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#141414" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Modération 7j/7</li>
+      </ul>
+    </div>
+
+    <div class="bot">
+      <div class="avatars">
+        <span style="background:linear-gradient(135deg,#E87C4A,#c85a2a);">Rk</span>
+        <span style="background:linear-gradient(135deg,#4A7CE8,#2a52c8);">Mi</span>
+        <span style="background:linear-gradient(135deg,#2FB16B,#1c8a4f);">Fa</span>
+        <span style="background:linear-gradient(135deg,#7a4ae8,#4a2ac8);">+</span>
+      </div>
+      <small><b>12 480 Malgaches</b> en ligne maintenant</small>
+    </div>
+  </aside>
+
+  <!-- ===== Côté droit : formulaire ===== -->
+  <section class="auth-form">
+    <div class="auth-card">
+      <a href="index.html" class="auth-back desktop-only">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M14 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Retour à l'accueil
+      </a>
+
+      <div class="auth-tabs" role="tablist">
+        <button class="auth-tab active" data-pane="connexion" role="tab" aria-selected="true">Connexion</button>
+        <button class="auth-tab" data-pane="inscription" role="tab" aria-selected="false">Inscription</button>
+      </div>
+
+      <!-- ===== Pane connexion ===== -->
+      <div class="auth-pane" data-pane="connexion">
+        <h2>Bon retour 👋</h2>
+        <p class="sub">Connecte-toi en un geste.</p>
+
+        <div class="auth-error" data-auth-error></div>
+        <div class="social" style="grid-template-columns: 1fr; gap: 10px;">
+          <div class="google-slot"></div>
+          <button class="social-btn" type="button" onclick="appleSoon()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M17.05 12.54c0-2.86 2.34-4.24 2.45-4.3-1.34-1.96-3.42-2.23-4.16-2.26-1.77-.18-3.45 1.05-4.34 1.05-.91 0-2.28-1.03-3.75-1-1.93.03-3.71 1.13-4.7 2.86-2.01 3.48-.51 8.62 1.43 11.45.95 1.39 2.07 2.94 3.54 2.88 1.43-.06 1.97-.92 3.7-.92 1.72 0 2.21.92 3.72.89 1.54-.03 2.51-1.4 3.44-2.8 1.09-1.6 1.54-3.16 1.56-3.24-.04-.02-2.99-1.14-3.02-4.51M14.2 4.16c.78-.95 1.31-2.27 1.16-3.58-1.13.04-2.49.75-3.3 1.7-.72.84-1.36 2.18-1.19 3.47 1.26.1 2.55-.64 3.33-1.59" fill="#000"/></svg>
+            Continuer avec Apple
+          </button>
+        </div>
+
+        <p class="switch-note">Pas encore de compte ? <a href="#" data-go="inscription">S'inscrire</a></p>
+      </div>
+
+      <!-- ===== Pane inscription ===== -->
+      <div class="auth-pane pane-hidden" data-pane="inscription">
+        <h2>Crée ton compte</h2>
+        <p class="sub">Un geste, et c'est parti.</p>
+
+        <div class="auth-error" data-auth-error></div>
+        <div class="social" style="grid-template-columns: 1fr; gap: 10px;">
+          <div class="google-slot"></div>
+          <button class="social-btn" type="button" onclick="appleSoon()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M17.05 12.54c0-2.86 2.34-4.24 2.45-4.3-1.34-1.96-3.42-2.23-4.16-2.26-1.77-.18-3.45 1.05-4.34 1.05-.91 0-2.28-1.03-3.75-1-1.93.03-3.71 1.13-4.7 2.86-2.01 3.48-.51 8.62 1.43 11.45.95 1.39 2.07 2.94 3.54 2.88 1.43-.06 1.97-.92 3.7-.92 1.72 0 2.21.92 3.72.89 1.54-.03 2.51-1.4 3.44-2.8 1.09-1.6 1.54-3.16 1.56-3.24-.04-.02-2.99-1.14-3.02-4.51M14.2 4.16c.78-.95 1.31-2.27 1.16-3.58-1.13.04-2.49.75-3.3 1.7-.72.84-1.36 2.18-1.19 3.47 1.26.1 2.55-.64 3.33-1.59" fill="#000"/></svg>
+            Continuer avec Apple
+          </button>
+        </div>
+        <p style="font-size: 12.5px; color: var(--sub); line-height: 1.5; margin-top: 16px; text-align: center;">En continuant, tu confirmes avoir 18 ans et acceptes les <a href="legal.html#cgu-1">Conditions</a> &amp; la <a href="legal.html#privacy-1">Politique de Confidentialité</a>.</p>
+
+        <p class="switch-note">Tu as déjà un compte ? <a href="#" data-go="connexion">Se connecter</a></p>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<script src="wera-api.js"></script>
+<script src="site.js"></script>
+<script>
+  // ===== toggle show/hide mot de passe =====
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.pass-toggle').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var inp = document.getElementById(btn.dataset.target);
+        if (!inp) return;
+        var isPass = inp.type === 'password';
+        inp.type = isPass ? 'text' : 'password';
+        btn.querySelector('.eye-show').style.display = isPass ? 'none' : '';
+        btn.querySelector('.eye-hide').style.display = isPass ? '' : 'none';
+        btn.setAttribute('aria-label', isPass ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+      });
+    });
+  });
+</script>
+<script>
+  (function() {
+    const tabs = document.querySelectorAll('.auth-tab');
+    const panes = document.querySelectorAll('.auth-pane');
+    function activate(name) {
+      tabs.forEach(t => {
+        const on = t.dataset.pane === name;
+        t.classList.toggle('active', on);
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      panes.forEach(p => p.classList.toggle('pane-hidden', p.dataset.pane !== name));
+      if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
+    }
+    tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.pane)));
+    document.querySelectorAll('[data-go]').forEach(a => a.addEventListener('click', (e) => { e.preventDefault(); activate(a.dataset.go); }));
+    // Initial from hash
+    const h = (location.hash || '').replace('#','');
+    if (h === 'inscription' || h === 'connexion') activate(h);
+    // Hash change (ex: déjà sur auth.html, on clique Connexion/S'inscrire dans la nav)
+    window.addEventListener('hashchange', function() {
+      const hh = (location.hash || '').replace('#','');
+      if (hh === 'inscription' || hh === 'connexion') activate(hh);
+    });
+  })();
+
+  // ===== générateur de pseudo anonyme =====
+  const PSEUDO_ADJ = ['Tsara','Soa','Tony','Faly','Madio','Mavo','Mena','Manga','Maitso','Mafana','Marani','Vita','Salama','Vaovao','Tena','Maika','Lava','Kely','Sambatra','Mamy'];
+  const PSEUDO_NOUN = ['Maki','Indri','Sifaka','Lemur','Vorona','Akoho','Voara','Vary','Ravinala','Baobab','Tantely','Felana','Lanitra','Vato','Tatatra','Soroka','Lalana','Volana','Masoandro','Andriana'];
+  function genPseudo() {
+    const a = PSEUDO_ADJ[Math.floor(Math.random() * PSEUDO_ADJ.length)];
+    const n = PSEUDO_NOUN[Math.floor(Math.random() * PSEUDO_NOUN.length)];
+    const num = Math.floor(10 + Math.random() * 90);
+    return a + n + num;
+  }
+  function fillSuggestedPseudo() {
+    const inp = document.getElementById('reg-pseudo');
+    if (!inp) return;
+    inp.value = genPseudo();
+    inp.dataset.suggested = '1';
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    fillSuggestedPseudo();
+    const inp = document.getElementById('reg-pseudo');
+    if (inp) inp.addEventListener('input', function () { inp.dataset.suggested = '0'; });
+    const btn = document.getElementById('reg-pseudo-shuffle');
+    if (btn) btn.addEventListener('click', fillSuggestedPseudo);
+  });
+  // ===== Auth réelle (backend Wera) =====
+  function showAuthError(msg) {
+    document.querySelectorAll('[data-auth-error]').forEach(function (el) {
+      el.textContent = msg;
+      el.classList.add('show');
+    });
+  }
+  function appleSoon() {
+    showAuthError('Connexion Apple — bientôt disponible. Utilise Google en attendant 🙂');
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    // Déjà connecté ? Direction l'accueil.
+    if (window.WeraAPI && WeraAPI.cachedUser()) { location.replace('index.html'); return; }
+
+    // Monte le bouton Google officiel dans les deux panes.
+    WeraAPI.mountGoogleButtons(
+      Array.prototype.slice.call(document.querySelectorAll('.google-slot')),
+      function onDone() {
+        // Le backend crée le compte au premier passage (pseudo dérivé du
+        // nom Google) et pose le cookie de session.
+        location.href = 'index.html';
+      },
+      function onError(msg) { showAuthError(msg); }
+    );
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Sécurité &amp; modération · Wera</title>
+<meta name="description" content="Comment Wera protège sa communauté : anonymat, signalement, blocage, modération humaine et charte. Fanajana — le respect avant tout." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Permanent+Marker&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+<style>
+  .page-hero { padding: 64px 0 56px; position: relative; overflow: hidden; }
+  .page-hero::before { content: ''; position: absolute; top: -180px; left: -120px; width: 560px; height: 560px; background: radial-gradient(circle, var(--yellow) 0%, rgba(250,220,52,0) 68%); opacity: .42; pointer-events: none; }
+  .page-hero .wrap { position: relative; max-width: 760px; }
+  .page-hero h1 { margin: 14px 0 18px; }
+  .sanctions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 44px; }
+  .sanction { border-radius: var(--radius); padding: 28px; border: 1px solid var(--line); background: var(--card); }
+  .sanction .tag { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 12.5px; letter-spacing: .6px; text-transform: uppercase; padding: 6px 12px; border-radius: 30px; margin-bottom: 16px; }
+  .sanction.s1 .tag { background: rgba(250,220,52,.28); color: var(--yellow-text); }
+  .sanction.s2 .tag { background: rgba(229,72,77,.12); color: var(--red); }
+  .sanction.s3 .tag { background: var(--red); color: #fff; }
+  .sanction h3 { font-size: 21px; margin-bottom: 8px; }
+  .sanction p { color: var(--sub); font-size: 15px; line-height: 1.55; }
+  .sanction .lvl { font-family: 'Archivo'; font-weight: 900; font-size: 13px; color: #C9C5BA; margin-bottom: 14px; }
+  @media (max-width: 760px) { .sanctions { grid-template-columns: 1fr; } }
+
+  .charte-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+  .charte-col h3 { font-size: 22px; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+  .charte-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+  .charte-list li { display: flex; gap: 13px; font-size: 16px; line-height: 1.5; }
+  .charte-list .mk { width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+  .charte-col.do .mk { background: rgba(47,177,107,.15); }
+  .charte-col.dont .mk { background: rgba(229,72,77,.13); }
+  @media (max-width: 760px) { .charte-grid { grid-template-columns: 1fr; gap: 30px; } }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a href="index.html" class="brand" aria-label="Wera, accueil">
+      <img class="word" src="logo-word-black.png" alt="Wera" decoding="async" />
+    </a>
+    <nav class="nav-links">
+      <a href="index.html#how">Comment ça marche</a>
+      <a href="securite.html">Sécurité</a>
+      <a href="a-propos.html">À propos</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="auth.html#connexion" class="nav-login">Connexion</a>
+      <a href="auth.html#inscription" class="btn btn-yellow">S'inscrire</a>
+    </div>
+    <button class="nav-burger" aria-label="Ouvrir le menu" aria-expanded="false"><span></span></button>
+  </div>
+  <div class="mobile-menu">
+    <a href="index.html#how">Comment ça marche</a>
+    <a href="securite.html">Sécurité</a>
+    <a href="a-propos.html">À propos</a>
+    <div class="menu-sep"></div>
+    <a href="auth.html#connexion" class="menu-login">Connexion</a>
+    <a href="auth.html#inscription" class="btn btn-yellow">S'inscrire</a>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="wrap">
+    <span class="ff-marker" style="font-size: 26px; transform: rotate(-3deg); display: inline-block; color: var(--ink);">FANAJANA</span>
+    <h1>Le respect<br />avant tout.</h1>
+    <p class="lead">Wera ne tient que grâce au respect mutuel. Pas de haine, pas de nudité, pas de harcèlement. Voici comment on protège la communauté — et comment tu peux le faire aussi.</p>
+  </div>
+</section>
+
+<!-- PILIERS -->
+<section class="section-sm">
+  <div class="wrap">
+    <div class="feature-grid reveal">
+      <div class="feature">
+        <div class="ficon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="4" y="10.5" width="16" height="10" rx="2.5" stroke="#141414" stroke-width="1.9"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" stroke="#141414" stroke-width="1.9"/></svg></div>
+        <h3>Pseudo &amp; profil discret</h3>
+        <p>Une inscription rapide te permet de rejoindre la communauté en pseudo. Tu ne partages que ce que tu veux, quand tu veux.</p>
+      </div>
+      <div class="feature">
+        <div class="ficon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M5 3v18M5 4h11l-2 4 2 4H5" stroke="#141414" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h3>Signalement en un geste</h3>
+        <p>Un comportement déplacé ? Signale pendant l'appel, en un clic. C'est anonyme et traité en priorité.</p>
+      </div>
+      <div class="feature">
+        <div class="ficon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="#141414" stroke-width="1.9"/><path d="M6 6l12 12" stroke="#141414" stroke-width="1.9" stroke-linecap="round"/></svg></div>
+        <h3>Blocage immédiat</h3>
+        <p>Bloque quelqu'un et tu ne le recroiseras plus jamais sur Wera. La décision t'appartient, toujours.</p>
+      </div>
+      <div class="feature">
+        <div class="ficon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z" stroke="#141414" stroke-width="1.9" stroke-linejoin="round"/><path d="M9 11.5l2 2 4-4" stroke="#141414" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h3>Modération humaine</h3>
+        <p>Une équipe malgache examine les signalements et applique des sanctions graduées. De vraies personnes, pas qu'un algorithme.</p>
+      </div>
+      <div class="feature">
+        <div class="ficon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="#141414" stroke-width="1.9"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 6.5a3 3 0 0 1 0 5.6M19 18.5a4.6 4.6 0 0 0-2.5-3.9" stroke="#141414" stroke-width="1.9" stroke-linecap="round"/></svg></div>
+        <h3>Mineurs protégés</h3>
+        <p>Wera est réservé aux 18 ans et plus. Tout signalement concernant un mineur est traité en urgence absolue.</p>
+      </div>
+      <div class="feature">
+        <div class="ficon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M6 3h9l4 4v14H6V3Z" stroke="#141414" stroke-width="1.9" stroke-linejoin="round"/><path d="M14 3v5h5M9 13h6M9 16.5h4" stroke="#141414" stroke-width="1.9" stroke-linecap="round"/></svg></div>
+        <h3>Charte claire</h3>
+        <p>Des règles simples, lues à l'arrivée, que chacun accepte. Le cadre commun qui rend les rencontres sereines.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SANCTIONS -->
+<section class="section" style="background: var(--paper-2);">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Sanctions graduées</span>
+      <h2>Une seule règle d'or :<br />le respect.</h2>
+      <p class="lead" style="margin-top: 14px;">Quand elle est enfreinte, la réponse est progressive — mais ferme pour les fautes graves.</p>
+    </div>
+    <div class="sanctions reveal">
+      <div class="sanction s1">
+        <div class="lvl">NIVEAU 1</div>
+        <span class="tag">Avertissement</span>
+        <h3>Un rappel à l'ordre</h3>
+        <p>Pour un écart léger : un avertissement clair t'explique ce qui n'a pas été, et comment l'éviter.</p>
+      </div>
+      <div class="sanction s2">
+        <div class="lvl">NIVEAU 2</div>
+        <span class="tag">Suspension</span>
+        <h3>Une pause forcée</h3>
+        <p>En cas de récidive ou de faute sérieuse, l'accès est suspendu temporairement — de quelques heures à plusieurs jours.</p>
+      </div>
+      <div class="sanction s3">
+        <div class="lvl">NIVEAU 3</div>
+        <span class="tag">Bannissement</span>
+        <h3>La porte se ferme</h3>
+        <p>Pour les fautes graves (haine, nudité, mineurs, menaces), le bannissement est définitif. Sans seconde chance.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CHARTE -->
+<section class="section" id="charte">
+  <div class="wrap">
+    <div class="section-head center reveal">
+      <span class="eyebrow">La charte</span>
+      <h2>Ce qu'on attend de toi</h2>
+    </div>
+    <div class="charte-grid reveal" style="margin-top: 46px;">
+      <div class="charte-col do">
+        <h3>On encourage</h3>
+        <ul class="charte-list">
+          <li><span class="mk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#2FB16B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span> La bienveillance et la curiosité sincère envers l'autre.</li>
+          <li><span class="mk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#2FB16B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Parler malagasy, français, ou les deux — comme tu le sens.</li>
+          <li><span class="mk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#2FB16B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Signaler ce qui te met mal à l'aise, pour protéger les autres.</li>
+          <li><span class="mk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#2FB16B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Quitter un appel à tout moment, sans avoir à te justifier.</li>
+        </ul>
+      </div>
+      <div class="charte-col dont">
+        <h3>On interdit</h3>
+        <ul class="charte-list">
+          <li><span class="mk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#E5484D" stroke-width="2.4" stroke-linecap="round"/></svg></span> La nudité et tout contenu à caractère sexuel.</li>
+          <li><span class="mk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#E5484D" stroke-width="2.4" stroke-linecap="round"/></svg></span> Les propos haineux, racistes ou discriminatoires.</li>
+          <li><span class="mk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#E5484D" stroke-width="2.4" stroke-linecap="round"/></svg></span> Le harcèlement, les menaces et l'intimidation.</li>
+          <li><span class="mk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#E5484D" stroke-width="2.4" stroke-linecap="round"/></svg></span> La présence de mineurs : Wera est strictement +18.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section" style="background: var(--paper-2);">
+  <div class="wrap">
+    <div class="section-head center reveal">
+      <span class="eyebrow">FAQ Sécurité</span>
+      <h2>Vos questions</h2>
+    </div>
+    <div class="faq reveal" style="margin-top: 40px;">
+      <div class="faq-item">
+        <button class="faq-q">Que se passe-t-il quand je signale quelqu'un ?</button>
+        <div class="faq-a"><p>L'appel est immédiatement interrompu de ton côté et un rapport anonyme part vers la modération. Selon la gravité et l'historique de la personne, une sanction graduée est appliquée. Tu peux aussi la bloquer pour ne plus jamais la croiser.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Mes appels sont-ils enregistrés ?</button>
+        <div class="faq-a"><p>Non. Les appels ne sont pas enregistrés. En cas de signalement, seules les métadonnées nécessaires à la modération sont conservées, de façon limitée dans le temps.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Comment vérifiez-vous l'âge des membres ?</button>
+        <div class="faq-a"><p>Wera est réservé aux personnes majeures. La majorité est confirmée à l'arrivée, et tout signalement concernant un mineur déclenche une intervention prioritaire et un bannissement.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Une personne bloquée peut-elle revenir ?</button>
+        <div class="faq-a"><p>Non. Une fois bloquée, elle ne pourra plus jamais te être proposée en appel, dans aucun sens.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section-sm band-yellow">
+  <div class="wrap center reveal">
+    <h2 style="margin-bottom: 20px;">Une communauté qui se respecte.</h2>
+    <a href="appel.html" class="btn btn-primary btn-lg">Lancer un appel</a>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div>
+        <a href="index.html" class="brand" aria-label="Wera, accueil">
+          <img class="word" src="logo-word-yellow.png" alt="Wera" loading="lazy" decoding="async" />
+        </a>
+        <p class="footer-blurb">La communauté malgache en vidéo. Rencontre des Malgaches au hasard, partout dans le monde.</p>
+      </div>
+      <div>
+        <h4>Produit</h4>
+        <ul>
+          <li><a href="appel.html">Lancer un appel</a></li>
+          <li><a href="index.html#how">Comment ça marche</a></li>
+          <li>
+</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Communauté</h4>
+        <ul>
+          <li><a href="a-propos.html">À propos</a></li>
+          <li><a href="securite.html">Sécurité &amp; modération</a></li>
+          <li><a href="securite.html#charte">Charte</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Légal</h4>
+        <ul>
+          <li><a href="legal.html#cgu-1">Conditions</a></li>
+          <li><a href="legal.html#privacy-1">Confidentialité</a></li>
+          <li><a href="legal.html#mod-1">Modération</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Wera · wera.mg</span>
+      <span class="ff-marker">Vita malagasy ho an'ny Malagasy 🇲🇬</span>
+    </div>
+  </div>
+</footer>
+
+<script src="wera-api.js"></script>
+<script src="site.js"></script>
+</body>
+</html>

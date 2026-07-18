@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Wera · Aperçu mobile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Permanent+Marker&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #141414;
+    --paper: #f6f5f0;
+    --paper-2: #ecebe4;
+    --yellow: #fadc34;
+    --yellow-deep: #f0c800;
+    --sub: rgba(20,20,20,.62);
+    --line: rgba(20,20,20,.1);
+    --card: #fff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Archivo', system-ui, sans-serif;
+    background: var(--paper-2);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+  .ff-marker { font-family: 'Permanent Marker', cursive; font-weight: 400; }
+
+  /* ============ TOP BAR ============ */
+  .topbar {
+    height: 56px;
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 16px;
+    padding: 0 22px;
+    position: sticky; top: 0; z-index: 20;
+  }
+  .topbar a.back {
+    display: inline-flex; align-items: center; gap: 7px;
+    color: var(--ink); text-decoration: none;
+    font-weight: 700; font-size: 14px;
+    padding: 7px 12px; border-radius: 9px;
+    transition: background .15s;
+  }
+  .topbar a.back:hover { background: var(--paper-2); }
+  .topbar .title { font-weight: 800; font-size: 15px; letter-spacing: -.005em; }
+  .topbar .title .ff-marker { color: var(--yellow-deep); font-size: 16px; margin-left: 6px; }
+  .topbar .meta {
+    margin-left: auto;
+    display: flex; gap: 18px; align-items: center;
+    color: var(--sub); font-size: 13px; font-weight: 600;
+  }
+  .topbar .meta b { color: var(--ink); }
+  .topbar .meta .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sub); }
+
+  /* ============ RAIL ============ */
+  .rail {
+    overflow-x: auto;
+    padding: 36px 36px 56px;
+    min-height: calc(100vh - 56px);
+    background:
+      radial-gradient(circle at 22% 18%, rgba(250,220,52,.13) 0, transparent 38%),
+      radial-gradient(circle at 78% 82%, rgba(250,220,52,.08) 0, transparent 42%);
+  }
+  .rail-inner {
+    display: flex; gap: 56px;
+    min-width: min-content;
+    align-items: flex-start;
+  }
+
+  /* ============ FRAME CELL ============ */
+  .cell { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; flex-shrink: 0; }
+  .frame-label {
+    display: flex; align-items: center; gap: 10px;
+    padding-left: 4px;
+    font-size: 12.5px; font-weight: 700; color: var(--sub);
+    letter-spacing: .8px; text-transform: uppercase;
+  }
+  .frame-label .num {
+    background: var(--ink); color: #fff;
+    width: 22px; height: 22px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800; letter-spacing: 0;
+  }
+  .frame-label .name { color: var(--ink); }
+  .frame-sub {
+    padding-left: 4px; padding-top: 2px;
+    color: var(--sub); font-size: 13px; font-weight: 500;
+    letter-spacing: 0; text-transform: none;
+  }
+
+  /* ============ PHONE BEZEL ============ */
+  .phone {
+    --w: 360px;
+    --h: 750px;
+    --radius: 52px;
+    --bezel: 10px;
+    width: var(--w); height: var(--h);
+    border-radius: var(--radius);
+    background: linear-gradient(180deg, #1a1a1c 0%, #0c0c0e 100%);
+    padding: var(--bezel);
+    position: relative;
+    flex-shrink: 0;
+    box-shadow:
+      inset 0 0 0 1.5px #2c2c30,
+      0 1px 0 rgba(255,255,255,.06) inset,
+      0 18px 50px -16px rgba(20,20,22,.4),
+      0 6px 14px -6px rgba(20,20,22,.18);
+  }
+  .phone-screen {
+    width: 100%; height: 100%;
+    border-radius: calc(var(--radius) - var(--bezel));
+    overflow: hidden;
+    background: var(--paper);
+    position: relative;
+  }
+  .phone-screen iframe {
+    width: 100%; height: 100%;
+    border: 0; display: block;
+    background: var(--paper);
+  }
+  /* dynamic island */
+  .phone .island {
+    position: absolute;
+    top: 18px; left: 50%; transform: translateX(-50%);
+    width: 102px; height: 30px;
+    border-radius: 18px;
+    background: #000;
+    z-index: 5;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+  }
+  /* side buttons */
+  .phone .side-vol-up,
+  .phone .side-vol-dn,
+  .phone .side-power {
+    position: absolute;
+    background: #18181a;
+    border-radius: 1.5px;
+    box-shadow: inset 0 0 0 .5px rgba(255,255,255,.04);
+  }
+  .phone .side-vol-up { left: -2px; top: 132px; width: 3px; height: 32px; }
+  .phone .side-vol-dn { left: -2px; top: 176px; width: 3px; height: 56px; }
+  .phone .side-power  { right: -2px; top: 162px; width: 3px; height: 76px; }
+
+  /* ============ OVERLAY CTA ============ */
+  .frame-overlay {
+    position: absolute; left: 50%; bottom: 22px;
+    transform: translateX(-50%);
+    padding: 8px 14px;
+    background: rgba(20,20,22,.9);
+    color: #fff; font-size: 12px; font-weight: 600;
+    border-radius: 30px;
+    display: inline-flex; align-items: center; gap: 6px;
+    opacity: 0; transition: opacity .2s, transform .2s;
+    pointer-events: none;
+    backdrop-filter: blur(6px);
+    z-index: 10;
+  }
+  .phone:hover .frame-overlay { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+  /* hint */
+  .mp-note {
+    position: fixed; right: 22px; bottom: 22px;
+    background: var(--ink); color: #fff;
+    padding: 12px 14px 12px 14px; border-radius: 14px;
+    font-size: 12.5px; font-weight: 600;
+    max-width: 264px; z-index: 100;
+    box-shadow: 0 12px 32px -10px rgba(0,0,0,.4);
+    display: flex; align-items: flex-start; gap: 10px;
+    animation: slideUp .35s ease-out both;
+  }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .mp-note svg { flex-shrink: 0; margin-top: 1px; }
+  .mp-note .x {
+    background: none; border: none; color: rgba(255,255,255,.6);
+    cursor: pointer; padding: 0; margin-left: 4px; font-size: 18px; line-height: 1;
+  }
+  .mp-note.hidden { display: none; }
+
+  /* scrollbar */
+  .rail::-webkit-scrollbar { height: 12px; }
+  .rail::-webkit-scrollbar-track { background: transparent; }
+  .rail::-webkit-scrollbar-thumb { background: rgba(20,20,20,.15); border-radius: 10px; border: 3px solid var(--paper-2); }
+  .rail::-webkit-scrollbar-thumb:hover { background: rgba(20,20,20,.3); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="back" href="index.html">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Retour au site
+  </a>
+  <span class="title">Wera <span class="ff-marker">an-tànana</span></span>
+  <div class="meta">
+    <span><b>6</b> écrans</span>
+    <span class="dot"></span>
+    <span>iPhone 15 Pro · <b>393 × 852</b></span>
+    <span class="dot"></span>
+    <span>Interactif</span>
+  </div>
+</header>
+
+<main class="rail">
+  <div class="rail-inner">
+
+    <div class="cell">
+      <div class="frame-label"><span class="num">01</span><span class="name">Accueil</span></div>
+      <div class="phone">
+        <span class="island"></span>
+        <span class="side-vol-up"></span><span class="side-vol-dn"></span><span class="side-power"></span>
+        <div class="phone-screen"><iframe src="index.html" title="Accueil" loading="lazy"></iframe></div>
+        <span class="frame-overlay">Touche pour interagir</span>
+      </div>
+      <div class="frame-sub">Hero, comment ça marche, FAQ</div>
+    </div>
+
+    <div class="cell">
+      <div class="frame-label"><span class="num">02</span><span class="name">Inscription</span></div>
+      <div class="phone">
+        <span class="island"></span>
+        <span class="side-vol-up"></span><span class="side-vol-dn"></span><span class="side-power"></span>
+        <div class="phone-screen"><iframe src="auth.html#inscription" title="Inscription" loading="lazy"></iframe></div>
+        <span class="frame-overlay">Pseudo généré auto</span>
+      </div>
+      <div class="frame-sub">Pseudo anonyme + e-mail</div>
+    </div>
+
+    <div class="cell">
+      <div class="frame-label"><span class="num">03</span><span class="name">Appel vidéo</span></div>
+      <div class="phone">
+        <span class="island"></span>
+        <span class="side-vol-up"></span><span class="side-vol-dn"></span><span class="side-power"></span>
+        <div class="phone-screen"><iframe src="appel.html" title="Appel" loading="lazy"></iframe></div>
+        <span class="frame-overlay">Lance un appel pour tester</span>
+      </div>
+      <div class="frame-sub">Tuiles + chat texte</div>
+    </div>
+
+    <div class="cell">
+      <div class="frame-label"><span class="num">04</span><span class="name">Mon profil</span></div>
+      <div class="phone">
+        <span class="island"></span>
+        <span class="side-vol-up"></span><span class="side-vol-dn"></span><span class="side-power"></span>
+        <div class="phone-screen"><iframe src="compte.html#profil" title="Profil" loading="lazy"></iframe></div>
+        <span class="frame-overlay">Verrou pseudo 30 jours</span>
+      </div>
+      <div class="frame-sub">Profil + préférences</div>
+    </div>
+
+    <div class="cell">
+      <div class="frame-label"><span class="num">05</span><span class="name">À propos</span></div>
+      <div class="phone">
+        <span class="island"></span>
+        <span class="side-vol-up"></span><span class="side-vol-dn"></span><span class="side-power"></span>
+        <div class="phone-screen"><iframe src="a-propos.html" title="À propos" loading="lazy"></iframe></div>
+        <span class="frame-overlay">Mission & équipe</span>
+      </div>
+      <div class="frame-sub">Mission, équipe, valeurs</div>
+    </div>
+
+    <div class="cell">
+      <div class="frame-label"><span class="num">06</span><span class="name">Sécurité</span></div>
+      <div class="phone">
+        <span class="island"></span>
+        <span class="side-vol-up"></span><span class="side-vol-dn"></span><span class="side-power"></span>
+        <div class="phone-screen"><iframe src="securite.html" title="Sécurité" loading="lazy"></iframe></div>
+        <span class="frame-overlay">Modération & signalement</span>
+      </div>
+      <div class="frame-sub">Règles & modération</div>
+    </div>
+
+  </div>
+</main>
+
+<div class="mp-note" id="mpNote">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#fadc34" stroke-width="1.8"/><path d="M12 8v5M12 16.5v.5" stroke="#fadc34" stroke-width="2" stroke-linecap="round"/></svg>
+  <span>Chaque écran est interactif — touche, scroll, tape un message.</span>
+  <button class="x" onclick="document.getElementById('mpNote').classList.add('hidden')" aria-label="Fermer">×</button>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>À propos · Wera</title>
+<meta name="description" content="Wera, c'est une idée simple : reconnecter les Malgaches, du pays et de la diaspora, en vidéo. Vita malagasy ho an'ny Malagasy." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Permanent+Marker&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+<style>
+  .about-hero { padding: 70px 0 56px; position: relative; overflow: hidden; }
+  .about-hero::before { content: ''; position: absolute; top: -160px; right: -100px; width: 540px; height: 540px; background: radial-gradient(circle, var(--yellow) 0%, rgba(250,220,52,0) 68%); opacity: .42; pointer-events: none; }
+  .about-hero .wrap { position: relative; max-width: 820px; }
+  .about-hero h1 { margin: 14px 0 0; }
+
+  .mission-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+  .mission-grid p { font-size: 17.5px; line-height: 1.65; color: #2f3038; margin-bottom: 18px; }
+  .mission-grid p:last-child { margin-bottom: 0; }
+  .mission-illus { border-radius: var(--radius); aspect-ratio: 4/5; background:
+      linear-gradient(150deg, var(--slate), var(--slate-hi)),
+      repeating-linear-gradient(45deg, rgba(250,220,52,.06) 0 18px, transparent 18px 36px);
+    position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-card); }
+  .mission-illus .ph { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; letter-spacing: 1.5px; color: rgba(255,255,255,.5); border: 1px dashed rgba(255,255,255,.3); border-radius: 8px; padding: 9px 14px; background: rgba(0,0,0,.2); text-align: center; line-height: 1.6; }
+  .mission-illus .badge { position: absolute; width: 84px; height: 84px; border-radius: 50%; top: 26px; left: 26px; }
+  @media (max-width: 820px) { .mission-grid { grid-template-columns: 1fr; gap: 30px; } .mission-illus { aspect-ratio: 16/11; } }
+
+  .values { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  .value { padding: 6px 4px; }
+  .value .mw { font-family: 'Permanent Marker', cursive; color: var(--yellow-deep); font-size: 22px; transform: rotate(-2deg); display: inline-block; margin-bottom: 10px; }
+  .value h3 { font-size: 22px; margin-bottom: 8px; }
+  .value p { color: var(--sub); font-size: 15.5px; line-height: 1.55; }
+  @media (max-width: 760px) { .values { grid-template-columns: 1fr; gap: 26px; } }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; text-align: center; }
+  .stat .n { font-size: clamp(40px, 5vw, 58px); font-weight: 900; letter-spacing: -.02em; line-height: 1; color: var(--yellow); }
+  .stat .l { color: rgba(255,255,255,.7); font-size: 15px; margin-top: 8px; }
+  @media (max-width: 600px) { .stats { grid-template-columns: 1fr; gap: 28px; } }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a href="index.html" class="brand" aria-label="Wera, accueil">
+      <img class="word" src="logo-word-black.png" alt="Wera" decoding="async" />
+    </a>
+    <nav class="nav-links">
+      <a href="index.html#how">Comment ça marche</a>
+      <a href="securite.html">Sécurité</a>
+      <a href="a-propos.html">À propos</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="auth.html#connexion" class="nav-login">Connexion</a>
+      <a href="auth.html#inscription" class="btn btn-yellow">S'inscrire</a>
+    </div>
+    <button class="nav-burger" aria-label="Ouvrir le menu" aria-expanded="false"><span></span></button>
+  </div>
+  <div class="mobile-menu">
+    <a href="index.html#how">Comment ça marche</a>
+    <a href="securite.html">Sécurité</a>
+    <a href="a-propos.html">À propos</a>
+    <div class="menu-sep"></div>
+    <a href="auth.html#connexion" class="menu-login">Connexion</a>
+    <a href="auth.html#inscription" class="btn btn-yellow">S'inscrire</a>
+  </div>
+</header>
+
+<section class="about-hero">
+  <div class="wrap">
+    <span class="ff-marker" style="font-size: 26px; transform: rotate(-3deg); display: inline-block; color: var(--ink);">N'iza n'iza</span>
+    <h1>Reconnecter les Malgaches,<br />où qu'ils soient.</h1>
+    <p class="lead" style="margin-top: 18px; max-width: 600px;">Wera est né d'un constat tout simple : la communauté malgache est partout dans le monde — mais elle se croise rarement. On a voulu changer ça.</p>
+  </div>
+</section>
+
+<!-- MISSION -->
+<section class="section-sm">
+  <div class="wrap">
+    <div class="mission-grid reveal">
+      <div>
+        <span class="eyebrow">Notre mission</span>
+        <h2 style="margin: 12px 0 20px;">Un seul clic entre deux Malgaches.</h2>
+        <p>De Tana à Paris, de Toamasina à Montréal, de Mahajanga à La Réunion : la diaspora malgache est immense, mais dispersée. Trop souvent, on grandit loin du pays sans jamais croiser quelqu'un qui partage notre langue, nos références, notre Culture.</p>
+        <p>Wera met fin à ça. Un clic, et tu tombes sur un·e autre Malgache, au hasard, en vidéo. Pas d'algorithme qui décide pour toi, pas de profil à soigner — juste la spontanéité d'une vraie rencontre.</p>
+      </div>
+      <div class="mission-illus">
+        <img class="badge" src="logo-badge-yellow.png" alt="" />
+        <span class="ph">[ PHOTO COMMUNAUTÉ ]<br />portraits diaspora malgache</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VALEURS -->
+<section class="section" style="background: var(--paper-2);">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Nos valeurs</span>
+      <h2>Ce qui nous guide.</h2>
+    </div>
+    <div class="values reveal" style="margin-top: 44px;">
+      <div class="value">
+        <span class="mw">Fanajana</span>
+        <h3>Le respect</h3>
+        <p>Rien ne se construit sans respect mutuel. C'est le socle de chaque rencontre, et la règle qu'on défend le plus fermement.</p>
+      </div>
+      <div class="value">
+        <span class="mw">Firaisankina</span>
+        <h3>La solidarité</h3>
+        <p>On bâtit un lieu où la communauté se retrouve, s'entraide et se reconnaît — où qu'elle vive dans le monde.</p>
+      </div>
+      <div class="value">
+        <span class="mw">Tsotra</span>
+        <h3>La simplicité</h3>
+        <p>Pas de chichi, pas d'algorithme opaque. Un bouton, une rencontre. La technologie au service de l'humain.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="section band-dark">
+  <div class="wrap">
+    <div class="stats reveal">
+      <div class="stat"><div class="n">12 480</div><div class="l">Malgaches en ligne en ce moment</div></div>
+      <div class="stat"><div class="n">40+</div><div class="l">pays où vit la communauté</div></div>
+      <div class="stat"><div class="n">100%</div><div class="l">vita malagasy</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section-sm band-yellow">
+  <div class="wrap center reveal">
+    <span class="ff-marker" style="font-size: 26px; transform: rotate(-3deg); display: inline-block;">TAIRO ARY !!!</span>
+    <h2 style="margin: 8px 0 20px;">Rejoins la communauté.</h2>
+    <a href="appel.html" class="btn btn-primary btn-lg">Lancer un appel</a>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div>
+        <a href="index.html" class="brand" aria-label="Wera, accueil">
+          <img class="word" src="logo-word-yellow.png" alt="Wera" loading="lazy" decoding="async" />
+        </a>
+        <p class="footer-blurb">La communauté malgache en vidéo. Rencontre des Malgaches au hasard, partout dans le monde.</p>
+      </div>
+      <div>
+        <h4>Produit</h4>
+        <ul>
+          <li><a href="appel.html">Lancer un appel</a></li>
+          <li><a href="index.html#how">Comment ça marche</a></li>
+          <li>
+</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Communauté</h4>
+        <ul>
+          <li><a href="a-propos.html">À propos</a></li>
+          <li><a href="securite.html">Sécurité &amp; modération</a></li>
+          <li><a href="securite.html#charte">Charte</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Légal</h4>
+        <ul>
+          <li><a href="legal.html#cgu-1">Conditions</a></li>
+          <li><a href="legal.html#privacy-1">Confidentialité</a></li>
+          <li><a href="legal.html#mod-1">Modération</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Wera · wera.mg</span>
+      <span class="ff-marker">Vita malagasy ho an'ny Malagasy 🇲🇬</span>
+    </div>
+  </div>
+</footer>
+
+<script src="wera-api.js"></script>
+<script src="site.js"></script>
+</body>
+</html>

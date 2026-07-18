@@ -297,6 +297,14 @@ router.post('/google', async (req, res) => {
     }
 });
 
+// ── Config publique ──────────────────────────────────────────────────────
+// Le site statique n'a pas de variables d'environnement au build : il
+// récupère ici le client ID Google (valeur publique par nature — il est
+// visible dans la page de n'importe quel site utilisant GSI).
+router.get('/config', (_req, res) => {
+    res.json({ googleClientId: process.env.GOOGLE_CLIENT_ID || null });
+});
+
 // ── Session helpers ──────────────────────────────────────────────────────
 
 // Returns the current user's profile via the cookie/header. The frontend

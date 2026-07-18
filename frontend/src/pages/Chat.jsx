@@ -35,6 +35,12 @@ export default function Chat() {
     const statusRef = useRef('idle');
     const stopInitiatedRef = useRef(false);
     const initedRef = useRef(false);
+    // Reconnexion automatique de l'appel (voir watchCall / tryRecover).
+    const partnerPeerIdRef = useRef(null);
+    const initiatorRef = useRef(false);
+    const recoverTimerRef = useRef(null);
+    const recoverAttemptsRef = useRef(0);
+    const [linkUnstable, setLinkUnstable] = useState(false);
 
     useEffect(() => { userRef.current = user; }, [user]);
     useEffect(() => { statusRef.current = status; }, [status]);
@@ -99,17 +105,26 @@ export default function Chat() {
             if (statusRef.current !== 'connected') setStatus('waiting');
         });
 
-        socketRef.current.on('partner_found', ({ partnerPeerId, partnerUsername, partnerUserId, initiator }) => {
+        socketRef.current.on('partner_found', async ({ partnerPeerId, partnerUsername, partnerUserId, initiator }) => {
             pendingFindRef.current = false;
             stopInitiatedRef.current = false;
+            partnerPeerIdRef.current = partnerPeerId;
+            initiatorRef.current = Boolean(initiator);
+            recoverAttemptsRef.current = 0;
+            clearRecoverTimer();
+            setLinkUnstable(false);
             // Defensive: keep only a short, plain-text-ish slice to display.
             // The server already validates the username at registration but
             // this prevents any future regression from spilling into the UI.
             const safeName = String(partnerUsername || '').replace(/[<>]/g, '').slice(0, 40);
             setPartnerName(safeName);
             setPartnerId(partnerUserId || null);
+            statusRef.current = 'connected';
             setStatus('connected');
             setMessages([]);
+            // Les credentials TURN récupérés au chargement de la page peuvent
+            // avoir expiré — l'initiateur repart avec des frais avant d'appeler.
+            if (initiator) await refreshIceConfig();
             connectVideo(partnerPeerId, initiator);
         });
 
@@ -120,6 +135,10 @@ export default function Chat() {
         socketRef.current.on('partner_left', () => {
             setPartnerName('');
             setPartnerId(null);
+            partnerPeerIdRef.current = null;
+            initiatorRef.current = false;
+            clearRecoverTimer();
+            setLinkUnstable(false);
             if (remoteVideo.current) remoteVideo.current.srcObject = null;
             currentCall.current?.close();
             // If *we* stopped the conversation, do NOT restart matchmaking.
@@ -163,21 +182,17 @@ export default function Chat() {
         setStatus('waiting');
     };
 
-    const initPeer = async () => {
-        const peerServerUrl = new URL(SOCKET_URL);
+    // Sans TURN, deux clients en données mobiles (CGNAT des deux côtés) ne
+    // peuvent pas établir de connexion P2P — l'appel resterait bloqué sur
+    // "Connexion...". STUN seul reste le repli si l'API est injoignable.
+    const DEFAULT_ICE = [
+        { urls: 'stun:stun.cloudflare.com:3478' },
+        { urls: 'stun:stun.l.google.com:19302' }
+    ];
 
-        // Fetch fresh TURN credentials before opening the Peer.
-        // Without TURN, two mobile-data clients (both on carrier-grade NAT)
-        // can't establish a P2P connection — calls would just hang on
-        // "Connexion...". STUN-only is left as the fallback if the API
-        // is unreachable.
-        let iceServers = [
-            { urls: 'stun:stun.cloudflare.com:3478' },
-            { urls: 'stun:stun.l.google.com:19302' }
-        ];
+    const fetchIceServers = async () => {
         try {
-            const res = await axios.get(`${API_URL}/turn/credentials`);
-            if (res.data?.iceServers?.length) iceServers = res.data.iceServers;
+            const res = await axios.get(`${API_URL}/turn/credentials`, { timeout: 8000 });
             if (res.data?.relayAvailable) {
                 console.info('TURN relay actif — provider:', res.data.provider);
             } else {
@@ -186,9 +201,28 @@ export default function Chat() {
                     ') — les appels mobile↔mobile ne pourront pas s\'établir.'
                 );
             }
+            if (res.data?.iceServers?.length) return res.data.iceServers;
         } catch (err) {
             console.warn('TURN credentials unavailable, falling back to STUN only:', err?.message || err);
         }
+        return DEFAULT_ICE;
+    };
+
+    // PeerJS relit options.config à chaque nouvelle RTCPeerConnection :
+    // mettre à jour l'objet partagé suffit pour que le prochain appel parte
+    // avec des credentials TURN frais (ceux de Metered expirent au bout de
+    // quelques heures — ceux du chargement de page peuvent être périmés).
+    const refreshIceConfig = async () => {
+        const servers = await fetchIceServers();
+        if (peerRef.current?.options?.config) {
+            peerRef.current.options.config.iceServers = servers;
+        }
+        return servers;
+    };
+
+    const initPeer = async () => {
+        const peerServerUrl = new URL(SOCKET_URL);
+        const iceServers = await fetchIceServers();
 
         const peer = new Peer(undefined, {
             host: peerServerUrl.hostname,
@@ -206,11 +240,16 @@ export default function Chat() {
 
         peer.on('call', (call) => {
             if (!localStream.current) return;
+            // Un nouvel appel entrant remplace l'ancien — c'est aussi le
+            // chemin par lequel l'initiateur nous "rappelle" après une
+            // coupure réseau (voir tryRecover).
+            currentCall.current?.close();
             currentCall.current = call;
             call.answer(localStream.current);
             call.on('stream', (remoteStream) => {
                 if (remoteVideo.current) remoteVideo.current.srcObject = remoteStream;
             });
+            watchCall(call);
         });
 
         peer.on('error', (err) => console.error('Peer error:', err));
@@ -243,6 +282,97 @@ export default function Chat() {
                 if (remoteVideo.current) remoteVideo.current.srcObject = remoteStream;
             });
             call.on('error', (err) => console.error('Call error:', err));
+            watchCall(call);
+        }
+    };
+
+    // ── Surveillance de l'appel & reconnexion automatique ────────────────
+    // Sur mobile (4G), la radio coupe régulièrement quelques secondes.
+    // WebRTC passe alors en 'disconnected' et se répare souvent tout seul —
+    // mais s'il passe en 'failed' (changement d'IP, allocation TURN perdue),
+    // rien ne le relance jamais : l'écran reste figé. Ici, l'initiateur
+    // raccroche et rappelle le même partenaire avec des credentials TURN
+    // frais ; l'appelé, lui, attend le rappel et passe au suivant si rien
+    // ne revient.
+    const clearRecoverTimer = () => {
+        if (recoverTimerRef.current) {
+            clearTimeout(recoverTimerRef.current);
+            recoverTimerRef.current = null;
+        }
+    };
+
+    const callAlive = () => {
+        const st = currentCall.current?.peerConnection?.iceConnectionState;
+        return st === 'connected' || st === 'completed';
+    };
+
+    const watchCall = (call) => {
+        const pc = call.peerConnection;
+        if (!pc) {
+            // PeerJS peut créer la RTCPeerConnection un instant plus tard.
+            setTimeout(() => {
+                if (call === currentCall.current) watchCall(call);
+            }, 500);
+            return;
+        }
+        pc.oniceconnectionstatechange = () => {
+            if (call !== currentCall.current) return; // appel déjà remplacé
+            const st = pc.iceConnectionState;
+            if (st === 'connected' || st === 'completed') {
+                setLinkUnstable(false);
+                recoverAttemptsRef.current = 0;
+                clearRecoverTimer();
+            } else if (st === 'disconnected') {
+                // Laisse 8s à WebRTC pour se réparer seul avant d'agir.
+                setLinkUnstable(true);
+                clearRecoverTimer();
+                recoverTimerRef.current = setTimeout(tryRecover, 8000);
+            } else if (st === 'failed') {
+                setLinkUnstable(true);
+                clearRecoverTimer();
+                recoverTimerRef.current = setTimeout(tryRecover, 300);
+            }
+        };
+    };
+
+    const tryRecover = async () => {
+        if (statusRef.current !== 'connected') return;
+        if (callAlive()) return;
+        const pid = partnerPeerIdRef.current;
+        if (!pid || !peerRef.current || !localStream.current) return;
+
+        if (!initiatorRef.current) {
+            // Côté appelé : on laisse à l'initiateur le temps de rappeler ;
+            // si rien ne revient, on passe au suivant.
+            clearRecoverTimer();
+            recoverTimerRef.current = setTimeout(() => {
+                if (statusRef.current === 'connected' && !callAlive()) skip();
+            }, 12000);
+            return;
+        }
+
+        if (recoverAttemptsRef.current >= 3) {
+            skip();
+            return;
+        }
+        recoverAttemptsRef.current += 1;
+        try {
+            await refreshIceConfig();
+            if (statusRef.current !== 'connected' || callAlive()) return;
+            currentCall.current?.close();
+            const call = peerRef.current.call(pid, localStream.current);
+            currentCall.current = call;
+            call.on('stream', (remoteStream) => {
+                if (remoteVideo.current) remoteVideo.current.srcObject = remoteStream;
+            });
+            call.on('error', (err) => console.error('Call error:', err));
+            watchCall(call);
+            // Si cette tentative n'aboutit pas, on réessaie (jusqu'à 3 fois).
+            clearRecoverTimer();
+            recoverTimerRef.current = setTimeout(tryRecover, 8000);
+        } catch (err) {
+            console.error('Reconnexion échouée:', err?.message || err);
+            skip();
         }
     };
 
@@ -257,6 +387,10 @@ export default function Chat() {
 
     const skip = () => {
         stopInitiatedRef.current = false;
+        clearRecoverTimer();
+        partnerPeerIdRef.current = null;
+        recoverAttemptsRef.current = 0;
+        setLinkUnstable(false);
         currentCall.current?.close();
         if (remoteVideo.current) remoteVideo.current.srcObject = null;
         setPartnerName('');
@@ -267,6 +401,10 @@ export default function Chat() {
     };
 
     const stop = () => {
+        clearRecoverTimer();
+        partnerPeerIdRef.current = null;
+        recoverAttemptsRef.current = 0;
+        setLinkUnstable(false);
         currentCall.current?.close();
         pendingFindRef.current = false;
         if (status === 'waiting') {
@@ -341,6 +479,7 @@ export default function Chat() {
     };
 
     const cleanup = () => {
+        clearRecoverTimer();
         localStream.current?.getTracks().forEach(t => t.stop());
         socketRef.current?.disconnect();
         peerRef.current?.destroy();
@@ -392,6 +531,12 @@ export default function Chat() {
                         <div className="ome-overlay">
                             <span className="ome-overlay__dot" />
                             <span>{remoteBadge()}</span>
+                        </div>
+                    )}
+                    {status === 'connected' && linkUnstable && (
+                        <div className="ome-overlay">
+                            <span className="ome-overlay__dot" />
+                            <span>Connexion instable… reconnexion</span>
                         </div>
                     )}
                     {status === 'connected' && (

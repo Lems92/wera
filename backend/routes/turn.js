@@ -34,7 +34,13 @@ const auth = require('../middleware/authMiddleware');
 // short-lived credentials. Static TURN_* creds are by nature long-lived;
 // prefer providers 1/2 when possible.
 
-const TTL_SECONDS = 600; // 10 minutes for short-lived credentials.
+// 6 hours. This must comfortably outlive both a whole chat session and any
+// single call: TURN allocations are refreshed with the ORIGINAL credential,
+// so when the credential expires mid-call the refresh is rejected and the
+// relayed stream dies on the spot — with 600s this cut every mobile↔mobile
+// call at ~10 minutes (or sooner, since the frontend fetched credentials
+// once per page load).
+const TTL_SECONDS = 21600;
 
 // Always-on STUN. STUN is free and used as a first ICE candidate before
 // falling back to TURN relay.

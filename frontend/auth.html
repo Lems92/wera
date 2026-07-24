@@ -311,6 +311,20 @@
           </button>
         </div>
 
+        <div class="divider">ou avec ton e-mail</div>
+
+        <form id="loginForm" autocomplete="on" novalidate>
+          <div class="field">
+            <label for="log-email">Adresse e-mail</label>
+            <div class="with-icon"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="m4 7 8 6 8-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><input class="input" id="log-email" type="email" required autocomplete="email" placeholder="toi@exemple.mg" /></div>
+          </div>
+          <div class="field">
+            <label for="log-pass">Mot de passe</label>
+            <div class="with-icon"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="5" y="10.5" width="14" height="9.5" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span><input class="input has-action" id="log-pass" type="password" required autocomplete="current-password" placeholder="••••••••" /><button type="button" class="pass-toggle" data-target="log-pass" aria-label="Afficher le mot de passe"><span class="eye-show"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg></span><span class="eye-hide" style="display:none;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 4l16 16M9.9 5.9A9.5 9.5 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-3.2 3.9M6.1 8.3A16.6 16.6 0 0 0 2.5 12S6 18.5 12 18.5c1.1 0 2.1-.2 3-.5M9.9 9.9a3 3 0 0 0 4.2 4.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span></button></div>
+          </div>
+          <button class="btn btn-yellow submit-btn" type="submit" id="loginSubmit">Se connecter</button>
+        </form>
+
         <p class="switch-note">Pas encore de compte ? <a href="#" data-go="inscription">S'inscrire</a></p>
       </div>
 
@@ -327,6 +341,50 @@
             Continuer avec Apple
           </button>
         </div>
+        <div class="divider">ou avec ton e-mail</div>
+
+        <form id="registerForm" autocomplete="on" novalidate>
+          <div class="field">
+            <label for="reg-pseudo">Pseudo <span class="opt">— généré pour toi, modifiable</span></label>
+            <div class="with-icon"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8.2" r="3.6" stroke="currentColor" stroke-width="1.7"/><path d="M5 19.5a7 7 0 0 1 14 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span><input class="input has-action" id="reg-pseudo" type="text" required maxlength="24" autocomplete="username" placeholder="TsaraMaki42" /><button type="button" class="regen-in" id="reg-pseudo-shuffle" aria-label="Nouveau pseudo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v3h3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+          </div>
+          <div class="field">
+            <label for="reg-email">Adresse e-mail</label>
+            <div class="with-icon"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="m4 7 8 6 8-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><input class="input" id="reg-email" type="email" required autocomplete="email" placeholder="toi@exemple.mg" /></div>
+          </div>
+          <div class="field">
+            <label for="reg-pass">Mot de passe</label>
+            <div class="with-icon"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="5" y="10.5" width="14" height="9.5" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span><input class="input has-action" id="reg-pass" type="password" required minlength="8" autocomplete="new-password" placeholder="8+ caractères" /><button type="button" class="pass-toggle" data-target="reg-pass" aria-label="Afficher le mot de passe"><span class="eye-show"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg></span><span class="eye-hide" style="display:none;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 4l16 16M9.9 5.9A9.5 9.5 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-3.2 3.9M6.1 8.3A16.6 16.6 0 0 0 2.5 12S6 18.5 12 18.5c1.1 0 2.1-.2 3-.5M9.9 9.9a3 3 0 0 0 4.2 4.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span></button></div>
+            <span class="hint">Au moins 8 caractères, avec majuscule, minuscule, chiffre et symbole.</span>
+          </div>
+          <div class="row-2">
+            <div class="field">
+              <label for="reg-age">Âge</label>
+              <input class="input" id="reg-age" type="number" inputmode="numeric" required min="18" max="120" placeholder="18+" />
+            </div>
+            <div class="field">
+              <label for="reg-sexe">Sexe</label>
+              <select class="input" id="reg-sexe" required>
+                <option value="" disabled selected>Choisir…</option>
+                <option>Homme</option>
+                <option>Femme</option>
+                <option>Autre</option>
+              </select>
+            </div>
+          </div>
+          <div class="row-2">
+            <div class="field">
+              <label for="reg-ville">Ville</label>
+              <input class="input" id="reg-ville" type="text" required maxlength="40" placeholder="Tana, Paris, Maurice…" />
+            </div>
+            <div class="field">
+              <label for="reg-pays">Pays</label>
+              <input class="input" id="reg-pays" type="text" required maxlength="40" placeholder="Madagascar" />
+            </div>
+          </div>
+          <button class="btn btn-yellow submit-btn" type="submit" id="registerSubmit">Créer un compte</button>
+        </form>
+
         <p style="font-size: 12.5px; color: var(--sub); line-height: 1.5; margin-top: 16px; text-align: center;">En continuant, tu confirmes avoir 18 ans et acceptes les <a href="legal.html#cgu-1">Conditions</a> &amp; la <a href="legal.html#privacy-1">Politique de Confidentialité</a>.</p>
 
         <p class="switch-note">Tu as déjà un compte ? <a href="#" data-go="connexion">Se connecter</a></p>
@@ -411,9 +469,70 @@
   function appleSoon() {
     showAuthError('Connexion Apple — bientôt disponible. Utilise Google en attendant 🙂');
   }
+  function busy(btn, on, labelBusy, labelIdle) {
+    if (!btn) return;
+    btn.disabled = on;
+    btn.textContent = on ? labelBusy : labelIdle;
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     // Déjà connecté ? Direction l'accueil.
     if (window.WeraAPI && WeraAPI.cachedUser()) { location.replace('index.html'); return; }
+
+    // ── Connexion e-mail / mot de passe ──
+    var loginForm = document.getElementById('loginForm');
+    if (loginForm) loginForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var email = document.getElementById('log-email').value.trim();
+      var pass = document.getElementById('log-pass').value;
+      if (!email || !pass) { showAuthError('E-mail et mot de passe requis.'); return; }
+      var btn = document.getElementById('loginSubmit');
+      busy(btn, true, 'Connexion…', 'Se connecter');
+      WeraAPI.req('/auth/login', { method: 'POST', body: { email: email, password: pass } })
+        .then(function (r) {
+          if (r.ok && r.data.user) {
+            WeraAPI.storeUser(Object.assign({}, r.data.user, { email: email }));
+            location.href = 'index.html';
+          } else {
+            showAuthError((r.data && r.data.error) || 'Connexion impossible.');
+            busy(btn, false, 'Connexion…', 'Se connecter');
+          }
+        })
+        .catch(function () { showAuthError('Réseau indisponible.'); busy(btn, false, 'Connexion…', 'Se connecter'); });
+    });
+
+    // ── Inscription e-mail / mot de passe ──
+    var regForm = document.getElementById('registerForm');
+    if (regForm) regForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var payload = {
+        username: document.getElementById('reg-pseudo').value.trim(),
+        email: document.getElementById('reg-email').value.trim(),
+        password: document.getElementById('reg-pass').value,
+        age: Number(document.getElementById('reg-age').value),
+        sexe: document.getElementById('reg-sexe').value,
+        ville: document.getElementById('reg-ville').value.trim(),
+        pays: document.getElementById('reg-pays').value.trim()
+      };
+      if (!payload.username || !payload.email || !payload.password || !payload.age || !payload.sexe || !payload.ville || !payload.pays) {
+        showAuthError('Tous les champs sont requis.');
+        return;
+      }
+      if (payload.age < 18) { showAuthError('Wera est réservé aux 18 ans et plus.'); return; }
+      var btn = document.getElementById('registerSubmit');
+      busy(btn, true, 'Création…', 'Créer un compte');
+      WeraAPI.req('/auth/register', { method: 'POST', body: payload })
+        .then(function (r) {
+          if (r.ok && r.data.user) {
+            WeraAPI.storeUser(Object.assign({}, r.data.user, { email: payload.email, ville: payload.ville, pays: payload.pays }));
+            location.href = 'index.html';
+          } else {
+            showAuthError((r.data && r.data.error) || 'Inscription impossible.');
+            busy(btn, false, 'Création…', 'Créer un compte');
+          }
+        })
+        .catch(function () { showAuthError('Réseau indisponible.'); busy(btn, false, 'Création…', 'Créer un compte'); });
+    });
 
     // Monte le bouton Google officiel dans les deux panes.
     WeraAPI.mountGoogleButtons(

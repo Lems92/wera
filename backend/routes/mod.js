@@ -5,20 +5,15 @@ const auth = require('../middleware/authMiddleware');
 const { invalidateRestrictionCache } = require('../middleware/authMiddleware');
 
 // ── Console de modération (docs/SIGNALEMENT.md §7) ──────────────────────
-// Accès réservé : ADMIN_USER_IDS = liste d'ids utilisateurs séparés par des
-// virgules, définie sur Render. (Récupère ton id via GET /api/users/me.)
-const ADMIN_IDS = new Set(
-    String(process.env.ADMIN_USER_IDS || '')
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean)
-);
+// Les admins viennent de lib/admins : ADMIN_USER_IDS et/ou l'admin par
+// défaut créé au boot via ADMIN_EMAIL + ADMIN_PASSWORD.
+const admins = require('../lib/admins');
 
 function requireAdmin(req, res, next) {
-    if (!ADMIN_IDS.size) {
-        return res.status(503).json({ error: 'Console non configurée (ADMIN_USER_IDS manquant sur le serveur)' });
+    if (!admins.count()) {
+        return res.status(503).json({ error: 'Console non configurée (définis ADMIN_EMAIL + ADMIN_PASSWORD, ou ADMIN_USER_IDS, sur le serveur)' });
     }
-    if (!ADMIN_IDS.has(req.user.id)) {
+    if (!admins.isAdmin(req.user.id)) {
         return res.status(403).json({ error: 'Accès réservé à l\'équipe de modération' });
     }
     next();

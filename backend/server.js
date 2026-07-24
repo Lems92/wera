@@ -333,6 +333,9 @@ const lastPartnerAt = new Map();  // socketId -> timestamp when lastPartner was 
 
 // Paires signaleur↔signalé, jamais réappariées (docs/SIGNALEMENT.md §2).
 blocklist.load();
+// Admin par défaut de la console (ADMIN_EMAIL + ADMIN_PASSWORD) — créé au
+// boot s'il n'existe pas encore.
+require('./lib/admins').init();
 
 function removeFromWaitingQueue(socket) {
     // Remove all occurrences (defensive against duplicates).

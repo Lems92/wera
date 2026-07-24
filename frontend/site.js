@@ -52,7 +52,6 @@
             '</div>' +
             '<a href="appel.html" role="menuitem">Lancer un appel</a>' +
             '<a href="compte.html#profil" role="menuitem">Mon profil</a>' +
-            '<a href="compte.html#parametres" role="menuitem">Paramètres</a>' +
             '<button type="button" role="menuitem" data-logout>Se déconnecter</button>' +
           '</div>' +
         '</div>';
@@ -71,7 +70,11 @@
       var mobUser = document.createElement('div');
       mobUser.className = 'mobile-user';
       mobUser.innerHTML =
-        '<div class="mobile-user-card"><span class="user-av lg" style="background:' + gradient + '">' + initialsTxt + '</span><div><b>' + (user.pseudo || 'Wera user') + '</b><span>' + (user.email || '') + '</span></div></div>' +
+        '<a href="compte.html#profil" class="mobile-user-card">' +
+          '<span class="user-av lg" style="background:' + gradient + '">' + initialsTxt + '</span>' +
+          '<div><b>' + (user.pseudo || 'Wera user') + '</b><span>' + (user.email || '') + '</span></div>' +
+          '<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+        '</a>' +
         '<a href="appel.html" class="btn btn-yellow">Lancer un appel</a>' +
         '<button type="button" class="mobile-logout" data-logout>Se déconnecter</button>';
       mobile.appendChild(mobUser);

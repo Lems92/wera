@@ -17,7 +17,10 @@ const authRoutes = require('./routes/auth');
 const reportRoutes = require('./routes/reports');
 const userRoutes = require('./routes/users');
 const turnRoutes = require('./routes/turn');
+const modRoutes = require('./routes/mod');
 const { isBanned } = require('./middleware/authMiddleware');
+const blocklist = require('./lib/blocklist');
+const nodeCrypto = require('crypto');
 
 // ── Boot-time security checks ────────────────────────────────────────────
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
@@ -299,6 +302,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/turn', turnRoutes);
+app.use('/api/mod', modRoutes);
 
 // rev = deployed commit (Render injects RENDER_GIT_COMMIT). Lets us check
 // from outside which version is actually live.
@@ -319,9 +323,16 @@ app.get('/api/check-location', async (req, res) => {
 // ─── Matchmaking ───────────────────────────────────────────
 const waitingQueue = [];          // file d'attente
 const activePairs = new Map();    // socketId -> socketId
+const activeMatchIds = new Map(); // socketId -> matchId de la paire en cours
 const lastPartner = new Map();    // socketId -> previous partnerId (for anti-immediate-rematch)
-const RECENT_PARTNER_WINDOW_MS = 30 * 1000; // avoid rematching the same person for 30s after a skip
+// Cooldown anti-boucle A↔B après un « Suivant » (docs/MATCHMAKING.md §7.2).
+// On garde le fallback « réutiliser le dernier partenaire si la file est
+// vide » pour ne jamais laisser quelqu'un bloqué en recherche.
+const RECENT_PARTNER_WINDOW_MS = 5 * 60 * 1000;
 const lastPartnerAt = new Map();  // socketId -> timestamp when lastPartner was recorded
+
+// Paires signaleur↔signalé, jamais réappariées (docs/SIGNALEMENT.md §2).
+blocklist.load();
 
 function removeFromWaitingQueue(socket) {
     // Remove all occurrences (defensive against duplicates).
@@ -406,7 +417,8 @@ io.on('connection', (socket) => {
 
         // Si quelqu'un attend déjà → on les apparie
         let partner;
-        const recentSkipped = []; // valid candidates we deferred because of recent-pairing.
+        const recentSkipped = [];  // valid candidates we deferred because of recent-pairing.
+        const blockedSkipped = []; // candidats en paire bloquée — jamais de fallback.
         while (waitingQueue.length > 0 && !partner) {
             const candidate = waitingQueue.shift();
             // Skip invalid / disconnected sockets or self-match.
@@ -414,6 +426,12 @@ io.on('connection', (socket) => {
             if (candidate.id === socket.id) continue;
             // Skip if candidate already paired (stale queue entry).
             if (activePairs.has(candidate.id)) continue;
+            // Paire bloquée (signalement) : JAMAIS réappariés, même si la
+            // file est vide — mis de côté puis remis en file pour les autres.
+            if (blocklist.isBlocked(socket.data.userId, candidate.data.userId)) {
+                blockedSkipped.push(candidate);
+                continue;
+            }
             // Defer recently-paired candidates so "Suivant" prefers someone new
             // — but keep them as a fallback if no one else is available.
             if (recentlyPaired(socket.id, candidate.id)) {
@@ -423,18 +441,24 @@ io.on('connection', (socket) => {
             partner = candidate;
         }
         // Fallback: only the previous partner is online → reuse them rather than
-        // leaving the user stuck in "Recherche...".
+        // leaving the user stuck in "Recherche...". (Never applies to blocked pairs.)
         if (!partner && recentSkipped.length) {
             partner = recentSkipped.shift();
         }
         // Re-queue any remaining deferred candidates at the head of the queue.
         if (recentSkipped.length) waitingQueue.unshift(...recentSkipped);
+        if (blockedSkipped.length) waitingQueue.unshift(...blockedSkipped);
 
         if (partner) {
 
-            // Enregistre la paire
+            // Enregistre la paire, estampillée d'un matchId unique : le client
+            // s'en sert pour ignorer les messages d'un appel précédent et le
+            // signalement s'en sert comme identifiant d'appel (callId).
+            const matchId = nodeCrypto.randomUUID();
             activePairs.set(socket.id, partner.id);
             activePairs.set(partner.id, socket.id);
+            activeMatchIds.set(socket.id, matchId);
+            activeMatchIds.set(partner.id, matchId);
 
             // Notifie les deux : qui appelle, qui répond.
             // partnerUserId = real DB id (UUID), used by /reports.
@@ -442,12 +466,14 @@ io.on('connection', (socket) => {
                 partnerPeerId: partner.data.peerId,
                 partnerUsername: partner.data.username,
                 partnerUserId: partner.data.userId,
+                matchId,
                 initiator: false
             });
             partner.emit('partner_found', {
                 partnerPeerId: socket.data.peerId,
                 partnerUsername: socket.data.username,
                 partnerUserId: socket.data.userId,
+                matchId,
                 initiator: true
             });
 
@@ -506,6 +532,8 @@ function leaveCurrentPair(socket) {
         io.to(partnerId).emit('partner_left');
         activePairs.delete(partnerId);
         activePairs.delete(socket.id);
+        activeMatchIds.delete(partnerId);
+        activeMatchIds.delete(socket.id);
         // Remember who just unpaired so we don't immediately rematch them.
         const now = Date.now();
         lastPartner.set(socket.id, partnerId);
@@ -514,6 +542,18 @@ function leaveCurrentPair(socket) {
         lastPartnerAt.set(partnerId, now);
     }
 }
+
+// Coupe l'appel en cours d'un utilisateur (appelé par POST /reports : la
+// personne signalée reçoit partner_left et son client relance la recherche ;
+// la paire vient d'être ajoutée à la blocklist donc ils ne se recroiseront pas).
+app.set('breakPairByUser', (userId) => {
+    for (const [, s] of io.of('/').sockets) {
+        if (s.data?.userId === userId) {
+            leaveCurrentPair(s);
+            removeFromWaitingQueue(s);
+        }
+    }
+});
 
 const PORT = process.env.PORT || 3001;
 // Avoid forcing a host binding; Render will route traffic via PORT.

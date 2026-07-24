@@ -11,10 +11,10 @@
 <link rel="stylesheet" href="style.css" />
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
-  body { background: var(--paper); }
   .google-slot { display: flex; justify-content: center; min-height: 44px; }
   .auth-error { display: none; background: rgba(229,72,77,.1); border: 1.5px solid rgba(229,72,77,.4); color: #b3261e; border-radius: 12px; padding: 12px 14px; font-size: 14px; font-weight: 600; margin-bottom: 14px; }
   .auth-error.show { display: block; }
+  body { background: var(--paper); }
 
   .auth-wrap { min-height: calc(100vh - 72px); display: grid; grid-template-columns: 1fr 1fr; }
   @media (max-width: 900px) { .auth-wrap { grid-template-columns: 1fr; min-height: 0; } }

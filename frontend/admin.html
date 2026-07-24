@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Console · Wera</title>
+<meta name="robots" content="noindex,nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Permanent+Marker&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+<style>
+  body { background: var(--paper); }
+  a { color: var(--ink); } a:hover { color: var(--yellow-text); }
+
+  /* ===== app shell ===== */
+  .adm { display: grid; grid-template-columns: 244px 1fr; min-height: 100vh; }
+
+  /* ---- sidebar ---- */
+  .side { background: var(--ink); color: #fff; display: flex; flex-direction: column; padding: 22px 16px; position: sticky; top: 0; height: 100vh; }
+  .side-brand { display: flex; align-items: center; gap: 10px; padding: 6px 8px 22px; }
+  .side-brand img { height: 26px; width: auto; }
+  .side-brand .tag { font-size: 10.5px; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; color: var(--ink); background: var(--yellow); padding: 3px 7px; border-radius: 6px; margin-left: 2px; }
+  .side-nav { display: flex; flex-direction: column; gap: 3px; }
+  .side-nav button { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: none; border: none; color: rgba(255,255,255,.66); font-family: inherit; font-size: 14.5px; font-weight: 600; padding: 11px 12px; border-radius: 11px; cursor: pointer; transition: background .14s, color .14s; }
+  .side-nav button:hover { background: rgba(255,255,255,.07); color: #fff; }
+  .side-nav button.active { background: var(--yellow); color: var(--ink); font-weight: 800; }
+  .side-nav button svg { width: 19px; height: 19px; flex-shrink: 0; }
+  .side-nav .badge { margin-left: auto; background: var(--red); color: #fff; font-size: 11px; font-weight: 800; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 20px; display: inline-flex; align-items: center; justify-content: center; }
+  .side-nav button.active .badge { background: var(--ink); color: #fff; }
+  .side-foot { margin-top: auto; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.12); }
+  .side-me { display: flex; align-items: center; gap: 11px; padding: 6px 8px; }
+  .side-me .av { width: 34px; height: 34px; border-radius: 50%; background: var(--yellow); color: var(--ink); font-weight: 900; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+  .side-me b { display: block; font-size: 13.5px; }
+  .side-me span { display: block; font-size: 11.5px; color: rgba(255,255,255,.5); }
+
+  /* ---- main ---- */
+  .main { padding: 30px 34px 60px; min-width: 0; }
+  .topbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 26px; flex-wrap: wrap; }
+  .topbar h1 { font-size: 30px; font-weight: 900; letter-spacing: -.02em; }
+  .topbar .sub { color: var(--sub); font-size: 14.5px; margin-top: 5px; }
+  .env { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; color: var(--yellow-text); background: rgba(250,220,52,.24); padding: 6px 12px; border-radius: 30px; }
+  .env .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(47,177,107,.2); }
+
+  .view { display: none; } .view.active { display: block; }
+
+  /* ===== KPI cards ===== */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 20px 22px; }
+  .kpi .lab { display: flex; align-items: center; gap: 8px; color: var(--sub); font-size: 13px; font-weight: 700; }
+  .kpi .lab svg { width: 16px; height: 16px; }
+  .kpi .val { font-size: 34px; font-weight: 900; letter-spacing: -.02em; margin: 10px 0 6px; line-height: 1; }
+  .kpi .trend { font-size: 12.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+  .kpi .trend.up { color: var(--green); } .kpi .trend.down { color: var(--red); } .kpi .trend.flat { color: var(--sub); }
+  .kpi.alert { background: #FFF6F6; border-color: rgba(229,72,77,.28); }
+  .kpi.alert .val { color: var(--red); }
+
+  /* ===== panels ===== */
+  .grid-2 { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; margin-top: 16px; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 22px 24px; }
+  .panel-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .panel-h h3 { font-size: 16px; font-weight: 800; }
+  .panel-h .note { font-size: 12.5px; color: var(--sub); font-weight: 600; }
+
+  /* bar chart */
+  .chart { display: flex; align-items: flex-end; gap: 14px; height: 190px; padding-top: 8px; }
+  .chart .col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end; }
+  .chart .bar { width: 100%; max-width: 42px; background: var(--yellow); border-radius: 8px 8px 4px 4px; position: relative; transition: height .5s var(--ease); min-height: 4px; }
+  .chart .bar.today { background: var(--ink); }
+  .chart .bar span { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 11.5px; font-weight: 800; color: var(--ink); white-space: nowrap; }
+  .chart .col small { font-size: 12px; color: var(--sub); font-weight: 700; }
+
+  /* city list */
+  .rank { display: flex; flex-direction: column; gap: 13px; }
+  .rank-row { display: grid; grid-template-columns: 20px 1fr auto; align-items: center; gap: 12px; }
+  .rank-row .n { color: var(--sub); font-weight: 800; font-size: 13px; }
+  .rank-row .nm { font-weight: 700; font-size: 14px; }
+  .rank-row .track { grid-column: 2 / 4; height: 7px; background: var(--paper-2); border-radius: 20px; overflow: hidden; margin-top: 4px; }
+  .rank-row .fill { height: 100%; background: var(--yellow-deep); border-radius: 20px; }
+  .rank-row .pct { font-size: 12.5px; font-weight: 800; color: var(--sub); }
+
+  /* reason breakdown */
+  .reasons { display: flex; flex-direction: column; gap: 14px; }
+  .reason-row { display: flex; align-items: center; gap: 12px; }
+  .reason-row .rk-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .reason-row .rk-nm { font-size: 13.5px; font-weight: 600; flex: 1; }
+  .reason-row .rk-v { font-size: 13.5px; font-weight: 800; }
+
+  /* ===== moderation ===== */
+  .modbar { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+  .filters { display: flex; gap: 6px; background: var(--paper-2); padding: 4px; border-radius: 12px; }
+  .filters button { background: none; border: none; font-family: inherit; font-size: 13.5px; font-weight: 700; color: var(--sub); padding: 8px 14px; border-radius: 9px; cursor: pointer; transition: background .14s, color .14s; white-space: nowrap; }
+  .filters button.active { background: var(--card); color: var(--ink); box-shadow: var(--shadow-soft); }
+  .modbar .sel { margin-left: auto; }
+  .modbar select { font-family: inherit; font-size: 13.5px; font-weight: 700; color: var(--ink); background: var(--card); border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 12px; cursor: pointer; }
+
+  .queue { display: flex; flex-direction: column; gap: 12px; }
+  .rep { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px; display: grid; grid-template-columns: auto 1fr auto; gap: 18px; align-items: center; transition: opacity .3s, transform .3s, box-shadow .18s; }
+  .rep:hover { box-shadow: var(--shadow-soft); }
+  .rep.resolving { opacity: 0; transform: translateX(24px); }
+  .rep .sev { width: 46px; height: 46px; border-radius: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .rep .sev svg { width: 22px; height: 22px; }
+  .sev.high { background: rgba(229,72,77,.13); color: var(--red); }
+  .sev.mid { background: rgba(250,220,52,.28); color: var(--yellow-text); }
+  .sev.low { background: var(--paper-2); color: var(--sub); }
+  .rep .body b.reason { font-size: 15.5px; font-weight: 800; display: inline-flex; align-items: center; gap: 8px; }
+  .rep .count { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 800; padding: 3px 9px 3px 7px; border-radius: 20px; background: var(--ink); color: #fff; margin-left: 8px; vertical-align: middle; }
+  .rep .count.hot { background: var(--red); }
+  .rep .also-reason { font-size: 11.5px; font-weight: 700; color: var(--sub); background: var(--paper-2); padding: 2px 8px; border-radius: 20px; margin-left: 6px; }
+  .rep .body .meta { color: var(--sub); font-size: 13px; margin-top: 5px; line-height: 1.5; }
+  .rep .body .meta strong { color: var(--ink); font-weight: 700; }
+  .rep .body .who { display: inline-flex; align-items: center; gap: 6px; }
+  .rep .body .who .a { width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 9.5px; font-weight: 800; }
+  .rep .pill-hist { display: inline-block; margin-top: 8px; font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 20px; background: var(--paper-2); color: var(--sub); }
+  .rep .pill-hist.warn { background: rgba(229,72,77,.12); color: var(--red); }
+  .rep .acts { display: flex; gap: 8px; flex-shrink: 0; }
+  .abtn { font-family: inherit; font-weight: 800; font-size: 13px; padding: 10px 14px; border-radius: 11px; border: none; cursor: pointer; transition: transform .12s, background .14s, box-shadow .14s; white-space: nowrap; }
+  .abtn:active { transform: scale(.95); }
+  .abtn.dismiss { background: var(--paper-2); color: var(--sub); }
+  .abtn.dismiss:hover { background: var(--line); color: var(--ink); }
+  .abtn.warn { background: rgba(250,220,52,.32); color: var(--yellow-text); }
+  .abtn.warn:hover { background: var(--yellow); color: var(--ink); }
+  .abtn.suspend { background: rgba(91,127,219,.16); color: #3b5bb5; }
+  .abtn.suspend:hover { background: rgba(91,127,219,.3); }
+  .abtn.ban { background: var(--red); color: #fff; }
+  .abtn.ban:hover { box-shadow: 0 8px 18px -8px rgba(229,72,77,.7); }
+
+  .empty { text-align: center; padding: 70px 20px; color: var(--sub); }
+  .empty .ok { width: 64px; height: 64px; border-radius: 50%; background: rgba(47,177,107,.14); color: var(--green); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+  .empty b { display: block; color: var(--ink); font-size: 19px; font-weight: 800; margin-bottom: 6px; }
+
+  /* toast */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translate(-50%, 20px); background: var(--ink); color: #fff; padding: 13px 20px; border-radius: 14px; font-size: 14px; font-weight: 700; box-shadow: 0 18px 40px -14px rgba(20,20,20,.5); opacity: 0; pointer-events: none; transition: opacity .22s, transform .22s; z-index: 100; display: inline-flex; align-items: center; gap: 10px; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast .ti { width: 22px; height: 22px; border-radius: 50%; background: var(--yellow); color: var(--ink); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  /* mobile topbar / responsive */
+  .m-top { display: none; }
+  @media (max-width: 900px) {
+    .adm { grid-template-columns: 1fr; }
+    .side { position: fixed; inset: 0 auto 0 0; width: 244px; z-index: 80; transform: translateX(-100%); transition: transform .26s var(--ease); box-shadow: 0 0 60px rgba(0,0,0,.4); }
+    .side.open { transform: none; }
+    .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.4); opacity: 0; pointer-events: none; transition: opacity .26s; z-index: 79; }
+    .scrim.show { opacity: 1; pointer-events: auto; }
+    .m-top { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--ink); color: #fff; position: sticky; top: 0; z-index: 40; padding-top: max(12px, env(safe-area-inset-top)); }
+    .m-top img { height: 24px; }
+    .m-burger { width: 40px; height: 40px; border: none; background: rgba(255,255,255,.1); border-radius: 10px; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .main { padding: 22px 18px 60px; }
+    .kpis { grid-template-columns: 1fr 1fr; }
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 620px) {
+    .rep { grid-template-columns: 1fr; gap: 14px; }
+    .rep .sev { width: 40px; height: 40px; }
+    .rep .acts { display: grid; grid-template-columns: 1fr 1fr; }
+    .topbar h1 { font-size: 24px; }
+  }
+  @media (max-width: 400px) { .kpis { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="scrim" data-scrim></div>
+
+<div class="adm">
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="side" data-side>
+    <div class="side-brand">
+      <img src="logo-word-yellow.png" alt="Wera" />
+      <span class="tag">Console</span>
+    </div>
+    <nav class="side-nav">
+      <button data-nav="overview" class="active">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6" stroke="currentColor" stroke-width="1.8"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6" stroke="currentColor" stroke-width="1.8"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6" stroke="currentColor" stroke-width="1.8"/></svg>
+        Vue d'ensemble
+      </button>
+      <button data-nav="moderation">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.6-3 8.2-7 10-4-1.8-7-5.4-7-10V6l7-3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 9v4M12 16v.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+        Modération
+        <span class="badge" data-queue-badge>0</span>
+      </button>
+    </nav>
+    <div class="side-foot">
+      <div class="side-me">
+        <span class="av">RA</span>
+        <div>
+          <b>Rakoto A.</b>
+          <span>Modérateur</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN ===== -->
+  <div>
+    <div class="m-top">
+      <button class="m-burger" data-burger aria-label="Menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      <img src="logo-word-yellow.png" alt="Wera" />
+      <span class="tag" style="font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink);background:var(--yellow);padding:3px 7px;border-radius:6px;">Console</span>
+    </div>
+
+    <main class="main">
+      <!-- ===== OVERVIEW ===== -->
+      <section class="view active" data-view="overview">
+        <div class="topbar">
+          <div>
+            <h1>Vue d'ensemble</h1>
+            <p class="sub">Activité de la communauté · aujourd'hui, 20 juillet 2026</p>
+          </div>
+          <span class="env"><span class="dot"></span>Version 0 · Bêta</span>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi">
+            <div class="lab"><svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.4" stroke="currentColor" stroke-width="1.8"/><path d="M3 19a6 6 0 0 1 12 0M16 6a3 3 0 0 1 0 5.7M20 19a4.6 4.6 0 0 0-3-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Membres inscrits</div>
+            <div class="val">1 284</div>
+            <div class="trend up">▲ +73 cette semaine</div>
+          </div>
+          <div class="kpi">
+            <div class="lab"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="13" height="12" rx="2.4" stroke="currentColor" stroke-width="1.8"/><path d="M16 10l5-3v10l-5-3" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Appels aujourd'hui</div>
+            <div class="val">642</div>
+            <div class="trend up">▲ +12 % vs hier</div>
+          </div>
+          <div class="kpi">
+            <div class="lab"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Durée moyenne</div>
+            <div class="val">4 min 12</div>
+            <div class="trend flat">= stable</div>
+          </div>
+          <div class="kpi alert">
+            <div class="lab"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l9 16H3L12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 9v4M12 16v.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Dossiers à traiter</div>
+            <div class="val" data-kpi-queue>0</div>
+            <div class="trend down">à traiter aujourd'hui</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-h"><h3>Appels par jour</h3><span class="note">7 derniers jours</span></div>
+            <div class="chart" data-chart></div>
+          </div>
+          <div class="panel">
+            <div class="panel-h"><h3>Motifs de signalement</h3><span class="note">30 j</span></div>
+            <div class="reasons" data-reasons></div>
+          </div>
+        </div>
+
+        <div class="grid-2" style="grid-template-columns: 1fr 1fr;">
+          <div class="panel">
+            <div class="panel-h"><h3>Top villes</h3><span class="note">membres actifs</span></div>
+            <div class="rank" data-cities></div>
+          </div>
+          <div class="panel">
+            <div class="panel-h"><h3>Santé de la communauté</h3><span class="note">7 j</span></div>
+            <div class="rank">
+              <div class="rank-row" style="grid-template-columns:1fr auto;"><span class="nm">Taux de mise en relation</span><span class="pct" style="color:var(--green)">94 %</span></div>
+              <div class="rank-row" style="grid-template-columns:1fr auto;"><span class="nm">Appels terminés sans incident</span><span class="pct" style="color:var(--green)">98,3 %</span></div>
+              <div class="rank-row" style="grid-template-columns:1fr auto;"><span class="nm">Taux de signalement</span><span class="pct">1,7 %</span></div>
+              <div class="rank-row" style="grid-template-columns:1fr auto;"><span class="nm">Membres revenus (7 j)</span><span class="pct">61 %</span></div>
+              <div class="rank-row" style="grid-template-columns:1fr auto;"><span class="nm">Délai moyen de modération</span><span class="pct">2 h 40</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== MODERATION ===== -->
+      <section class="view" data-view="moderation">
+        <div class="topbar">
+          <div>
+            <h1>Modération</h1>
+            <p class="sub"><span data-queue-count>0</span> dossier(s) en attente · <span data-report-count>0</span> signalements regroupés par membre, triés par gravité</p>
+          </div>
+          <span class="env"><span class="dot"></span>Équipe · 2 en ligne</span>
+        </div>
+
+        <div class="modbar">
+          <div class="filters" data-filters>
+            <button data-filter="all" class="active">Tous</button>
+            <button data-filter="high">Prioritaires</button>
+            <button data-filter="mid">Modérés</button>
+          </div>
+          <div class="sel">
+            <select data-reason-filter>
+              <option value="all">Tous les motifs</option>
+              <option value="Nudité / contenu sexuel">Nudité / contenu sexuel</option>
+              <option value="Propos haineux">Propos haineux</option>
+              <option value="Harcèlement">Harcèlement</option>
+              <option value="Mineur suspecté">Mineur suspecté</option>
+              <option value="Spam / publicité">Spam / publicité</option>
+              <option value="Autre">Autre</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="queue" data-queue></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<div class="toast" data-toast><span class="ti">✓</span><span data-toast-msg></span></div>
+
+<script src="wera-api.js"></script>
+<script>
+(function(){
+  // ---------- mock data ----------
+  const AV = ['#E5484D','#2FB16B','#8B6E00','#2A2E38','#ECCB15','#5B7FDB','#C4632F','#7A4FB0'];
+  const av = i => AV[i % AV.length];
+
+  const REASON_META = {
+    'Nudité / contenu sexuel': { sev:'high', color:'#E5484D' },
+    'Mineur suspecté':         { sev:'high', color:'#C4632F' },
+    'Propos haineux':          { sev:'high', color:'#8B6E00' },
+    'Harcèlement':             { sev:'mid',  color:'#ECCB15' },
+    'Spam / publicité':        { sev:'low',  color:'#5B7FDB' },
+    'Autre':                   { sev:'low',  color:'#6C6F77' },
+  };
+  const SEV_ICON = {
+    high:'<svg viewBox="0 0 24 24" fill="none"><path d="M12 3l9 16H3L12 3Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M12 9v4M12 16v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    mid:'<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.9"/><path d="M12 8v4.5M12 16v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    low:'<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.9"/><path d="M12 8v.5M12 11.5v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  };
+
+  const SEV_RANK = { high:0, mid:1, low:2 };
+
+  // Signalements bruts : 1 signalement = 1 entrée. Le dashboard les REGROUPE
+  // en dossiers par membre signalé (voir buildCases). Voir SIGNALEMENT.md.
+  // Signalements réels, chargés depuis GET /api/mod/reports (voir loadData).
+  const REASON_FR = {
+    sexual_content: 'Nudité / contenu sexuel',
+    minor: 'Mineur suspecté',
+    hate_speech: 'Propos haineux',
+    harassment: 'Harcèlement',
+    spam: 'Spam / publicité',
+    other: 'Autre'
+  };
+  function agoFr(iso){
+    if (!iso) return '';
+    const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000));
+    if (m < 60) return 'il y a ' + m + ' min';
+    const h = Math.round(m / 60);
+    if (h < 24) return 'il y a ' + h + ' h';
+    return 'il y a ' + Math.round(h / 24) + ' j';
+  }
+  let REPORTS = []];
+
+  // Regroupe les signalements par membre signalé → un dossier par personne.
+  function buildCases(){
+    const map = new Map();
+    REPORTS.forEach(r=>{
+      if (!map.has(r.reported)) map.set(r.reported, []);
+      map.get(r.reported).push(r);
+    });
+    const cases = [];
+    map.forEach((reps, reported)=>{
+      // motif principal = le plus grave ; motifs secondaires uniques
+      const sorted = [...reps].sort((a,b)=> SEV_RANK[REASON_META[a.reason].sev] - SEV_RANK[REASON_META[b.reason].sev]);
+      const top = sorted[0];
+      const otherReasons = [...new Set(reps.map(r=>r.reason).filter(x=>x!==top.reason))];
+      cases.push({
+        reported, reportedId: reps[0].reportedId, top, count: reps.length, reps,
+        reason: top.reason, sev: REASON_META[top.reason].sev,
+        city: top.city, prior: top.prior, ago: reps[0].ago,
+        otherReasons, ids: reps.map(r=>r.id),
+      });
+    });
+    // tri : gravité, puis nombre de signalements, puis récence
+    cases.sort((a,b)=> SEV_RANK[a.sev]-SEV_RANK[b.sev] || b.count-a.count);
+    return cases;
+  }
+
+  const CHART = [ ['Lun',480],['Mar',512],['Mer',495],['Jeu',560],['Ven',603],['Sam',688],['Dim',642] ];
+  const CITIES = [ ['Antananarivo',100],['Paris',64],['Toamasina',52],['Marseille',41],['Antsirabe',33],['Montréal',28] ];
+  const RSTAT = [ ['Harcèlement',31,'#ECCB15'],['Propos haineux',24,'#8B6E00'],['Nudité / contenu sexuel',19,'#E5484D'],['Spam / publicité',15,'#5B7FDB'],['Mineur suspecté',7,'#C4632F'],['Autre',4,'#6C6F77'] ];
+
+  const $ = s => document.querySelector(s);
+  const $$ = s => document.querySelectorAll(s);
+
+  // ---------- overview render ----------
+  function renderChart(){
+    const max = Math.max(...CHART.map(c=>c[1]));
+    $('[data-chart]').innerHTML = CHART.map((c,i)=>{
+      const h = Math.round(c[1]/max*100);
+      const today = i===CHART.length-1;
+      return `<div class="col"><div class="bar${today?' today':''}" style="height:${h}%"><span>${c[1]}</span></div><small>${c[0]}</small></div>`;
+    }).join('');
+  }
+  function renderCities(){
+    const max = Math.max(...CITIES.map(c=>c[1]));
+    $('[data-cities]').innerHTML = CITIES.map((c,i)=>`
+      <div>
+        <div class="rank-row" style="grid-template-columns:20px 1fr auto;"><span class="n">${i+1}</span><span class="nm">${c[0]}</span><span class="pct">${c[1]}%</span></div>
+        <div class="track"><div class="fill" style="width:${Math.round(c[1]/max*100)}%"></div></div>
+      </div>`).join('');
+  }
+  function renderReasons(){
+    $('[data-reasons]').innerHTML = RSTAT.map(r=>`
+      <div class="reason-row"><span class="rk-dot" style="background:${r[2]}"></span><span class="rk-nm">${r[0]}</span><span class="rk-v">${r[1]}%</span></div>`).join('');
+  }
+
+  // ---------- moderation ----------
+  let curSev = 'all', curReason = 'all';
+
+  function visible(){
+    return buildCases().filter(c=>{
+      if (curSev !== 'all' && c.sev !== curSev) return false;
+      if (curReason !== 'all' && !c.reps.some(r=>r.reason===curReason)) return false;
+      return true;
+    });
+  }
+
+  function renderQueue(){
+    const list = visible();
+    const q = $('[data-queue]');
+    if (!REPORTS.length){
+      q.innerHTML = `<div class="empty"><div class="ok"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="#2FB16B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div><b>File vide 🎉</b>Aucun signalement en attente. La communauté se porte bien.</div>`;
+    } else if (!list.length){
+      q.innerHTML = `<div class="empty"><b>Rien ici</b>Aucun signalement ne correspond à ce filtre.</div>`;
+    } else {
+      q.innerHTML = list.map(c=>{
+        const meta = REASON_META[c.reason];
+        const hist = c.prior>0 ? `<span class="pill-hist warn">⚠ ${c.prior} sanction${c.prior>1?'s':''} au compteur</span>` : `<span class="pill-hist">Aucun antécédent</span>`;
+        const ir = Math.abs(hash(c.reported));
+        const countBadge = c.count>1 ? `<span class="count${c.count>=3?' hot':''}">×${c.count} signalements</span>` : '';
+        const alsoBadge = c.otherReasons.length ? `<span class="also-reason">+ ${c.otherReasons.join(', ')}</span>` : '';
+        // détail des signalements : le plus grave d'abord, puis récents
+        const reporters = [...new Set(c.reps.map(r=>r.reporter))].join(', ');
+        const lastNote = c.top.note;
+        const detail = c.count>1
+          ? `Par ${reporters} — dernier motif « ${lastNote} »`
+          : `Par ${c.reps[0].reporter} — « ${lastNote} »`;
+        return `<div class="rep" data-reported="${c.reported}">
+          <div class="sev ${meta.sev}">${SEV_ICON[meta.sev]}</div>
+          <div class="body">
+            <b class="reason"><span class="rk-dot" style="width:9px;height:9px;border-radius:50%;background:${meta.color}"></span>${c.reason}${countBadge}${alsoBadge}</b>
+            <div class="meta">Signalé : <span class="who"><span class="a" style="background:${av(ir)}">${initials(c.reported)}</span><strong>${c.reported}</strong></span> · ${c.city} · ${c.ago}<br>${detail}</div>
+            ${hist}
+          </div>
+          <div class="acts">
+            <button class="abtn dismiss" data-act="dismiss">Rejeter</button>
+            <button class="abtn warn" data-act="warn">Avertir</button>
+            <button class="abtn suspend" data-act="suspend">Suspendre</button>
+            <button class="abtn ban" data-act="ban">Bannir</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    const cases = buildCases();
+    const nCases = cases.length, nReports = REPORTS.length;
+    $$('[data-queue-badge]').forEach(e=>{ e.textContent = nCases; e.style.display = nCases? 'inline-flex':'none'; });
+    $('[data-queue-count]').textContent = nCases;
+    $('[data-kpi-queue]').textContent = nCases;
+    $('[data-report-count]').textContent = nReports;
+  }
+
+  function initials(s){ return s.replace(/[^a-zA-Z]/g,'').slice(0,2).toUpperCase() || s.slice(0,2).toUpperCase(); }
+  function hash(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h<<5)-h+s.charCodeAt(i); h|=0; } return h; }
+
+  const ACT_MSG = {
+    dismiss:['Dossier rejeté','✓'],
+    warn:['Avertissement envoyé','⚠'],
+    suspend:['Membre suspendu 24 h','⏸'],
+    ban:['Membre banni','⛔'],
+  };
+  function resolve(reported, act){
+    const rep0 = REPORTS.find(r=>r.reported===reported);
+    const reportedId = rep0 && rep0.reportedId;
+    if (!reportedId){ toast('Dossier introuvable', '✗'); return; }
+    const el = $(`.rep[data-reported="${reported}"]`);
+    if (el){ el.classList.add('resolving'); }
+    WeraAPI.req('/mod/cases/' + encodeURIComponent(reportedId) + '/resolve', {
+      method: 'POST', body: { action: act }
+    }).then(r=>{
+      if (!r.ok){
+        if (el) el.classList.remove('resolving');
+        toast((r.data && r.data.error) || 'Erreur serveur', '✗');
+        return;
+      }
+      setTimeout(()=>{
+        REPORTS = REPORTS.filter(r2=>r2.reported!==reported);
+        renderQueue();
+      }, 300);
+      const [msg, ic] = ACT_MSG[act];
+      toast(msg, ic);
+    }).catch(()=>{
+      if (el) el.classList.remove('resolving');
+      toast('Réseau indisponible', '✗');
+    });
+  }
+
+  let toastT;
+  function toast(msg, ic){
+    const t = $('[data-toast]');
+    $('[data-toast-msg]').textContent = msg;
+    t.querySelector('.ti').textContent = ic || '✓';
+    t.classList.add('show');
+    clearTimeout(toastT);
+    toastT = setTimeout(()=>t.classList.remove('show'), 2400);
+  }
+
+  // ---------- events ----------
+  $('[data-queue]').addEventListener('click', e=>{
+    const b = e.target.closest('[data-act]'); if(!b) return;
+    const rep = b.closest('.rep');
+    resolve(rep.dataset.reported, b.dataset.act);
+  });
+  $('[data-filters]').addEventListener('click', e=>{
+    const b = e.target.closest('[data-filter]'); if(!b) return;
+    curSev = b.dataset.filter;
+    $$('[data-filter]').forEach(x=>x.classList.toggle('active', x===b));
+    renderQueue();
+  });
+  $('[data-reason-filter]').addEventListener('change', e=>{ curReason = e.target.value; renderQueue(); });
+
+  // nav
+  function go(view){
+    $$('[data-nav]').forEach(b=>b.classList.toggle('active', b.dataset.nav===view));
+    $$('[data-view]').forEach(v=>v.classList.toggle('active', v.dataset.view===view));
+    closeSide();
+    window.scrollTo(0,0);
+  }
+  $$('[data-nav]').forEach(b=>b.addEventListener('click', ()=>go(b.dataset.nav)));
+
+  // mobile sidebar
+  function openSide(){ $('[data-side]').classList.add('open'); $('[data-scrim]').classList.add('show'); }
+  function closeSide(){ $('[data-side]').classList.remove('open'); $('[data-scrim]').classList.remove('show'); }
+  $('[data-burger]').addEventListener('click', openSide);
+  $('[data-scrim]').addEventListener('click', closeSide);
+
+  // ---------- données réelles ----------
+  function loadReports(){
+    return WeraAPI.req('/mod/reports').then(r=>{
+      if (r.status === 401){ location.href = 'auth.html#connexion'; throw new Error('auth'); }
+      if (r.status === 403 || r.status === 503){
+        alert((r.data && r.data.error) || 'Accès réservé à l\'équipe de modération');
+        location.href = 'index.html';
+        throw new Error('forbidden');
+      }
+      REPORTS = (r.data.reports || []).map(x=>({
+        id: x.id,
+        reason: REASON_FR[x.reason] || 'Autre',
+        reported: x.reported,
+        reportedId: x.reportedId,
+        reporter: x.reporter || 'Anonyme',
+        city: x.city || '—',
+        ago: agoFr(x.createdAt),
+        note: x.note || '(sans détail)',
+        prior: x.prior || 0
+      }));
+      renderQueue();
+    });
+  }
+
+  function loadMetrics(){
+    return WeraAPI.req('/mod/metrics').then(r=>{
+      if (!r.ok) return;
+      const m = r.data;
+      const fmt = n => (n === null || n === undefined) ? '—' : Number(n).toLocaleString('fr-FR');
+      const kpis = $$('.kpi .val');
+      if (kpis[0]) kpis[0].textContent = fmt(m.members);
+      if (kpis[1]) kpis[1].textContent = fmt(m.callsToday);
+      if (kpis[2]) kpis[2].textContent = m.avgCallDuration || '—';
+      const trends = $$('.kpi .trend');
+      if (trends[0]) trends[0].textContent = m.newMembers7d != null ? ('▲ +' + m.newMembers7d + ' cette semaine') : '';
+      if (trends[1]) trends[1].textContent = '';
+      if (trends[2]) trends[2].textContent = '';
+      // Appels par jour : pas encore mesuré côté serveur
+      if (!m.callsByDay){
+        $('[data-chart]').innerHTML = '<div style="padding:34px 12px;color:var(--sub);font-size:13.5px;text-align:center;">Bientôt : suivi des appels côté serveur</div>';
+      }
+      // Top villes réelles
+      const cities = m.topCities || [];
+      if (cities.length){
+        const total = cities.reduce((a,c)=>a+c[1],0) || 1;
+        const max = cities[0][1] || 1;
+        $('[data-cities]').innerHTML = cities.map((c,i)=>`
+          <div>
+            <div class="rank-row" style="grid-template-columns:20px 1fr auto;"><span class="n">${i+1}</span><span class="nm">${c[0]}</span><span class="pct">${Math.round(c[1]/total*100)}%</span></div>
+            <div class="track"><div class="fill" style="width:${Math.round(c[1]/max*100)}%"></div></div>
+          </div>`).join('');
+      } else {
+        $('[data-cities]').innerHTML = '<div style="color:var(--sub);font-size:13.5px;">Pas encore de données</div>';
+      }
+      // Motifs 30 j réels
+      const br = m.reportsByReason30d || {};
+      const entries = Object.entries(br).sort((a,b)=>b[1]-a[1]);
+      if (entries.length){
+        const tot = entries.reduce((a,e)=>a+e[1],0) || 1;
+        $('[data-reasons]').innerHTML = entries.map(e=>{
+          const label = REASON_FR[e[0]] || e[0];
+          const meta = REASON_META[label] || { color:'#6C6F77' };
+          return `<div class="reason-row"><span class="rk-dot" style="background:${meta.color}"></span><span class="rk-nm">${label}</span><span class="rk-v">${Math.round(e[1]/tot*100)}%</span></div>`;
+        }).join('');
+      } else {
+        $('[data-reasons]').innerHTML = '<div style="color:var(--sub);font-size:13.5px;">Aucun signalement sur 30 jours 🎉</div>';
+      }
+    });
+  }
+
+  // Identité du modérateur dans la sidebar
+  function renderMe(){
+    const u = window.WeraAPI && WeraAPI.cachedUser();
+    if (!u) return;
+    const me = document.querySelector('.side-me');
+    if (me){
+      me.querySelector('.av').textContent = initials(u.pseudo || 'W');
+      me.querySelector('b').textContent = u.pseudo || 'Modérateur';
+    }
+  }
+
+  // init : rendu de base puis données réelles
+  renderChart(); renderCities(); renderReasons(); renderQueue();
+  renderMe();
+  loadReports().then(loadMetrics).catch(function(){});
+  // Rafraîchit la file toutes les 60 s (nouveaux signalements)
+  setInterval(function(){ loadReports().catch(function(){}); }, 60000);
+})();
+</script>
+</body>
+</html>

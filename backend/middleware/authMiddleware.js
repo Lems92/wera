@@ -2,28 +2,51 @@ const jwt = require('jsonwebtoken');
 const supabase = require('../config/supabase');
 
 // Tiny in-memory cache to avoid hammering the DB on every request:
-// userId -> { banned: boolean, exp: <timestamp ms> }
+// userId -> { banned, suspendedUntil, exp: <timestamp ms> }
 const banCache = new Map();
 const BAN_CACHE_TTL_MS = 60 * 1000;
 
-async function isBanned(userId) {
+// La colonne suspended_until arrive avec la migration modération. Tant
+// qu'elle n'existe pas, on retombe sur is_banned seul sans casser l'auth.
+let hasSuspendColumn = true;
+
+async function getRestriction(userId) {
     const now = Date.now();
     const hit = banCache.get(userId);
-    if (hit && hit.exp > now) return hit.banned;
+    if (hit && hit.exp > now) return hit;
 
-    const { data, error } = await supabase
+    const cols = hasSuspendColumn ? 'is_banned, suspended_until' : 'is_banned';
+    let { data, error } = await supabase
         .from('users')
-        .select('is_banned')
+        .select(cols)
         .eq('id', userId)
         .single();
 
-    if (error) {
-        console.warn('isBanned() DB error:', error.message);
-        return false;
+    if (error && hasSuspendColumn && /suspended_until/i.test(error.message || '')) {
+        hasSuspendColumn = false;
+        ({ data, error } = await supabase
+            .from('users')
+            .select('is_banned')
+            .eq('id', userId)
+            .single());
     }
-    const banned = Boolean(data?.is_banned);
-    banCache.set(userId, { banned, exp: now + BAN_CACHE_TTL_MS });
-    return banned;
+    if (error) {
+        console.warn('getRestriction() DB error:', error.message);
+        return { banned: false, suspendedUntil: null, exp: 0 };
+    }
+    const entry = {
+        banned: Boolean(data?.is_banned),
+        suspendedUntil: data?.suspended_until ? Date.parse(data.suspended_until) : null,
+        exp: now + BAN_CACHE_TTL_MS
+    };
+    banCache.set(userId, entry);
+    return entry;
+}
+
+// Banni OU suspension en cours → accès refusé (utilisé aussi par le socket).
+async function isBanned(userId) {
+    const r = await getRestriction(userId);
+    return r.banned || (r.suspendedUntil && r.suspendedUntil > Date.now());
 }
 
 function readToken(req) {
@@ -56,8 +79,15 @@ module.exports = async function auth(req, res, next) {
         return res.status(401).json({ error: 'Token révoqué' });
     }
 
-    if (await isBanned(decoded.id)) {
+    const restriction = await getRestriction(decoded.id);
+    if (restriction.banned) {
         return res.status(403).json({ error: 'Compte banni' });
+    }
+    if (restriction.suspendedUntil && restriction.suspendedUntil > Date.now()) {
+        const until = new Date(restriction.suspendedUntil);
+        return res.status(403).json({
+            error: 'Compte suspendu jusqu\'au ' + until.toLocaleString('fr-FR', { timeZone: 'Indian/Antananarivo' })
+        });
     }
 
     req.user = decoded;
@@ -67,3 +97,6 @@ module.exports = async function auth(req, res, next) {
 
 module.exports.isBanned = isBanned;
 module.exports.readToken = readToken;
+// Invalide l'entrée de cache d'un utilisateur (après une sanction, pour
+// qu'elle prenne effet tout de suite au lieu d'attendre l'expiration TTL).
+module.exports.invalidateRestrictionCache = (userId) => banCache.delete(userId);

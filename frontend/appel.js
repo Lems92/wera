@@ -23,6 +23,7 @@
   var pendingFind = false;
   var partnerPeerId = null;
   var partnerUserId = null;
+  var currentMatchId = null;   // estampille de la paire (serveur) — sert de callId au signalement
   var isInitiator = false;
   var recoverTimer = null;
   var recoverAttempts = 0;
@@ -186,6 +187,7 @@
       pendingFind = false;
       partnerPeerId = data.partnerPeerId;
       partnerUserId = data.partnerUserId || null;
+      currentMatchId = data.matchId || null;
       isInitiator = Boolean(data.initiator);
       recoverAttempts = 0;
       clearRecoverTimer();
@@ -210,7 +212,7 @@
 
     socket.on('partner_left', function () {
       closeCurrentCall();
-      partnerPeerId = null; partnerUserId = null;
+      partnerPeerId = null; partnerUserId = null; currentMatchId = null;
       clearRecoverTimer();
       if (app.getAttribute('data-current') === 'active') {
         // Reste dans l'écran d'appel, overlay « Manaraka… », et on recherche.
@@ -407,7 +409,7 @@
     closeCurrentCall();
     stopTimer();
     clearChat();
-    partnerPeerId = null; partnerUserId = null;
+    partnerPeerId = null; partnerUserId = null; currentMatchId = null;
     if (socket) socket.emit('skip');
     if (app.getAttribute('data-current') === 'active') {
       setPartnerOverlay(true, 'Manaraka…');
@@ -432,7 +434,7 @@
       if (wasConnected) socket.emit('skip');
       else if (wasWaiting) socket.emit('cancel_search');
     }
-    partnerPeerId = null; partnerUserId = null;
+    partnerPeerId = null; partnerUserId = null; currentMatchId = null;
     phase = 'idle';
     pendingFind = false;
     show('idle');
@@ -506,14 +508,24 @@
     });
     $('#reportSend').addEventListener('click', function () {
       var sel = document.querySelector('.report-reason.sel');
-      var reason = sel ? sel.textContent.trim() : 'Comportement inapproprié';
+      var label = sel ? sel.textContent.trim() : 'Autre comportement';
+      // Enum de motifs attendu par l'API (docs/SIGNALEMENT.md §3).
+      var REASON_ENUM = {
+        'Nudité ou contenu sexuel': 'sexual_content',
+        'Propos haineux ou racistes': 'hate_speech',
+        'Harcèlement ou menaces': 'harassment',
+        'Mineur en danger': 'minor',
+        'Autre comportement': 'other'
+      };
+      var reason = REASON_ENUM[label] || 'other';
       var reportedId = partnerUserId;
+      var callId = currentMatchId;
       var after = function () {
         endCall();
         setTimeout(function () { toast('Signalement envoyé. Merci d\'aider à protéger la communauté.'); }, 300);
       };
       if (reportedId) {
-        API.req('/reports', { method: 'POST', body: { reported_id: reportedId, reason: reason } })
+        API.req('/reports', { method: 'POST', body: { reported_id: reportedId, reason: reason, note: label, callId: callId } })
           .then(after, after);
       } else {
         after();
